@@ -1,0 +1,263 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    overflow-x: hidden; /* Allows vertical scrolling */
+    background-color: #f4f4f4;
+}
+/* Background Blur Effect */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('../image/dn1.jpg') no-repeat center center/cover;
+    filter: blur(5px); /* Blurred background */
+    z-index: -1;
+}
+/* Sticky Navbar that hides on scroll */
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.91);
+    padding: 15px 10%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+    z-index: 1000;
+    transition: top 0.3s; /* Smooth transition when hiding */
+}
+
+.navbar.hidden {
+    top: -70px; /* Moves the navbar up when hidden */
+}
+
+.navbar .logo {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.navbar ul {
+    list-style: none;
+    display: flex;
+    gap: 20px;
+}
+
+.navbar ul li {
+    display: inline;
+}
+
+.navbar ul li a {
+    text-decoration: none;
+    color: white;
+    font-size: 1rem;
+    transition: 0.3s;
+}
+.navbar ul li a i{
+    margin: 5px;
+}
+.navbar ul li a:hover {
+    color: orange;
+}
+ /* active styling */
+.navbar ul li.active a {
+    color: orange; /* Highlight text color */
+    background-color: transparent; /* Subtle background highlight */
+    font-weight: bold; /* Make text bold */
+}
+
+.btn {
+    text-decoration: none;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    border: 2px solid white;
+    transition: 0.3s;
+}
+.admin {
+    background: red;
+    border: none;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Space between icon and text */
+    font-family: 'Poppins', sans-serif; /* Modern font */
+    font-size: 24px;
+    font-weight: bold;
+    color: #000; /* Black text */
+}
+
+.logo img {
+    width: 50px; /* Adjust size of the logo icon */
+    height: auto;
+    border-radius: 40%;
+}
+
+.logo span {
+    color: #FF8000; /* 80% Orange */
+}
+
+@media (max-width: 768px) {
+    .logo {
+        font-size: 20px;
+    }
+
+    .logo img {
+        width: 40px;
+    }
+}
+
+
+/* Hero Section with Fixed Background */
+.hero {
+    width: 100%;
+    min-height: 100vh;
+    /* background: url('../image/dn1.jpg') no-repeat center center/cover; */
+    background-attachment: fixed; /* Keeps the image static */
+    position: relative;
+    align-items: center;
+    justify-content: center;
+    padding-top: 80px; /* Adjust to avoid overlap with navbar */
+}
+ /* Form Container */
+ .form-container {
+    max-width: 600px;
+    /* margin: 50px auto; */
+    margin-top: 0;
+    margin-left:30%;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: whitesmoke;
+}
+
+.form-container h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: orange;
+}
+
+.form-container label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: orange;
+}
+
+.form-container input[type="text"],
+.form-container input[type="tel"],
+.form-container input[type="number"],
+.form-container select,
+.form-container textarea {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.form-container input[type="submit"] {
+    background-color: #333;
+    color: orange;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.form-container input[type="submit"]:hover {
+    background-color: orange;
+    color:#333;
+}
+/* Footer Styles */
+.footer {
+    background: #333; /* Dark background */
+    color: #fff; /* Light text */
+    padding: 40px 10%; /* Padding for spacing */
+    font-family: 'Roboto', sans-serif; /* Consistent font */
+}
+
+.footer-content {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap; /* Wrap columns on smaller screens */
+    gap: 30px; /* Space between sections */
+}
+
+.footer-section {
+    flex: 1; /* Equal width for all sections */
+    min-width: 200px; /* Minimum width for responsiveness */
+}
+
+.footer-section h3 {
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+    color: orange; /* Accent color for headings */
+}
+
+.footer-section p {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: #ccc; /* Light gray for readability */
+}
+
+.footer-section.links ul {
+    list-style: none;
+    padding: 0;
+}
+
+.footer-section.links ul li {
+    margin-bottom: 10px;
+}
+
+.footer-section.links ul li a {
+    color: #fff; /* White text for links */
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.footer-section.links ul li a:hover {
+    color: orange; /* Accent color on hover */
+}
+
+.footer-bottom {
+    text-align: center;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #444; /* Subtle top border */
+    font-size: 0.9rem;
+    color: #ccc; /* Light gray for copyright text */
+}
+.social-icons a {
+    color: #fff;
+    font-size: 1.2rem;
+    margin-right: 10px;
+    transition: color 0.3s;
+}
+
+.social-icons a:hover {
+    color: orange;
+}
+@media (max-width: 768px) {
+    .footer-content {
+        flex-direction: column; /* Stack sections vertically */
+        align-items: center;
+        text-align: center;
+    }
+
+    .footer-section {
+        margin-bottom: 20px;
+    }
+}

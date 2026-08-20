@@ -1,0 +1,49 @@
+# Runtime uploads (user-provided images)
+/uploads/
+
+# Runtime data: may contain invite codes, rate-limit state, and IP addresses
+/data/*.json
+!/data/.gitkeep
+.vscode/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# PHPStorm / JetBrains
+.idea/
+
+# Composer dependencies (not used but safe)
+vendor/
+
+# Logs
+*.log
+
+# Local configuration and environment files
+.env
+.env.*
+!.env.example
+config.local.php
+
+# Ignore node modules if ever added
+node_modules/
+
+# Temporary files
+*.tmp
+*~
+
+# PHP sessions
+php_session.txt
+sess_*
+
+# PHPUnit/cache and coverage artifacts
+.phpunit.result.cache
+coverage/
+
+# Backup files
+*.bak
+*.old
+
+# Editor settings
+.vscode/*.code-workspace
+.vscode/settings.json
