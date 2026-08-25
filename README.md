@@ -51,6 +51,19 @@ No framework, package manager, build step, or automated test suite is required.
 
 The refactor does not automatically alter your XAMPP database. If you want extra protection against duplicate admin usernames and faster dashboard queries, review and run `database/optional_integrity_migration.sql` manually in phpMyAdmin after taking a backup. The foreign-key statement is deliberately commented out because it must only be enabled after checking for existing orphaned donation records.
 
+### Advanced donation administration
+
+Run `database/002_advanced_donation_administration.sql` **once** after taking a database backup to enable the advanced admin workspace. It adds reusable donors, donation reference codes, status history, and administrator audit logs, and migrates existing records without deleting them.
+
+After the migration, the admin sidebar provides:
+
+- **Donation Ledger**: filterable, paginated donation records with a dedicated detail view.
+- **Donor Directory**: normalized donor records linked to their donation history.
+- **Reports**: completed-donation totals by foundation, payment method, and month.
+- **Audit Log**: a chronological record of administrator changes.
+
+Use the new `update_donation_status.php` workflow from a donation detail page. It records the prior status, new status, administrator, timestamp, and optional verification note. Do not use the legacy status page for new administration work.
+
 ## Project layout
 
 ```text

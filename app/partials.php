@@ -3,8 +3,11 @@
 function render_admin_sidebar($active) {
     $items = [
         'dashboard' => ['addashboard.php', 'fas fa-tachometer-alt', 'Dashboard'],
-        'donations' => ['adddonationstatus.php', 'fas fa-hand-holding-usd', 'Donations Status'],
-        'donors' => ['donor.php', 'fas fa-users', 'Donors'],
+        'ledger' => ['donation_ledger.php', 'fas fa-book', 'Donation Ledger'],
+        'donors' => ['donor.php', 'fas fa-users', 'Donor Directory'],
+        'reports' => ['reports.php', 'fas fa-chart-bar', 'Reports'],
+        'audit' => ['audit_log.php', 'fas fa-history', 'Audit Log'],
+        'donations' => ['adddonationstatus.php', 'fas fa-hand-holding-usd', 'Legacy Status'],
         'foundations' => ['addfoundation.php', 'fas fa-hand-holding-heart', 'Add Foundation'],
         'news' => ['addnews.php', 'fas fa-newspaper', 'Add News'],
         'invite' => ['admin_invite.php', 'fas fa-key', 'Invite Code'],
