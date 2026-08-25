@@ -1,11 +1,7 @@
 <?php
 require_once 'config.php';
 
-// Check login
-if (!isset($_SESSION['admin_id']) && !isset($_SESSION['admin_username'])) {
-    header("Location: adlogin.php");
-    exit();
-}
+require_admin();
 
 // Session timeout (15 minutes)
 if (isset($_SESSION['LAST_ACTIVITY']) &&
@@ -13,8 +9,7 @@ if (isset($_SESSION['LAST_ACTIVITY']) &&
 
     session_unset();
     session_destroy();
-    header("Location: adlogin.php?timeout=1");
-    exit();
+    redirect_to('adlogin.php?timeout=1');
 }
 
 $_SESSION['LAST_ACTIVITY'] = time();

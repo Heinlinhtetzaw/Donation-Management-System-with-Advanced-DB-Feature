@@ -1,25 +1,24 @@
 <?php
 require_once 'auth_check.php';
 require_once 'csrf.php';
+require_once __DIR__ . '/app/partials.php';
 $csrfToken = generate_csrf_token();
 
 // Database connection
 $conn = getDBConnection();
 
 // Fetch completed donations
-$sql_completed = "SELECT id,donor_name, address, phone, payment_method, payment_status, SUM(amount) AS total_donations, COUNT(*) AS donation_count 
-                  FROM donations 
-                  WHERE payment_status = 'Complete' 
-                  GROUP BY id,donor_name, address, phone, payment_method, payment_status 
-                  ORDER BY total_donations DESC";
+$sql_completed = "SELECT id, donor_name, address, phone, payment_method, payment_status, amount
+                  FROM donations
+                  WHERE payment_status = 'Complete'
+                  ORDER BY created_at DESC";
 $result_completed = $conn->query($sql_completed);
 
 // Fetch pending donations
-$sql_pending = "SELECT id,donor_name, address, phone, payment_method, payment_status, SUM(amount) AS total_donations, COUNT(*) AS donation_count 
-                FROM donations 
-                WHERE payment_status = 'Pending' 
-                GROUP BY id,donor_name, address, phone, payment_method, payment_status 
-                ORDER BY total_donations DESC";
+$sql_pending = "SELECT id, donor_name, address, phone, payment_method, payment_status, amount
+                FROM donations
+                WHERE payment_status = 'Pending'
+                ORDER BY created_at DESC";
 $result_pending = $conn->query($sql_pending);
 ?>
 
@@ -35,22 +34,13 @@ $result_pending = $conn->query($sql_pending);
 <body>
     <div class="dashboard-container">
         <!-- Sidebar -->
-        <aside class="sidebar">
-            <h2>Admin Panel</h2>
-            <ul>
-                <li><a href="addashboard.php"><i class="fas fa-tachometer-alt"></i>Dashboard</a></li>
-                <li><a href="adddonationstatus.php"><i class="fas fa-hand-holding-usd"></i>Donation Status</a></li>
-                <li class="active"><a href="donor.php"><i class="fas fa-users"></i>Donors</a></li>
-                <li><a href="addfoundation.php"><i class="fas fa-hand-holding-heart"></i>Add Foundation</a></li>
-                <li><a href="addnews.php"><i class="fas fa-newspaper"></i>Add News</a></li>
-                <li><a href="admin_invite.php"><i class="fas fa-key"></i>Invite Code</a></li>
-                <li><a href="logout.php"><i class="fas fa-sign-out-alt"></i>Logout</a></li>
-            </ul>
-        </aside>
+        <?php render_admin_sidebar('donors'); ?>
 
         <!-- Main Content -->
         <div class="content">
             <h2>Donors Information</h2>
+            <?php if ($message = get_flash('success')): ?><p class="message-success"><?php echo e($message); ?></p><?php endif; ?>
+            <?php if ($message = get_flash('error')): ?><p class="message-error"><?php echo e($message); ?></p><?php endif; ?>
 
             <!-- Completed Donations Table -->
             <div class="donors-table">
@@ -63,7 +53,7 @@ $result_pending = $conn->query($sql_pending);
                                 <th>Address</th>
                                 <th>Phone</th>
                                 <th>Payment Method</th>
-                                <th>Total Donations</th>
+                                <th>Amount</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -76,7 +66,7 @@ $result_pending = $conn->query($sql_pending);
                                     echo '<td>' . htmlspecialchars($row["address"]) . '</td>';
                                     echo '<td>' . htmlspecialchars($row["phone"]) . '</td>';
                                     echo '<td>' . htmlspecialchars($row["payment_method"]) . '</td>';
-                                    echo '<td>' . number_format($row["total_donations"], 2) . 'MMK</td>';
+                                    echo '<td>' . number_format($row["amount"], 2) . ' MMK</td>';
                                     echo '<td>
                                     <form action="delete_donor.php" method="POST" style="display:inline;">
                                         <input type="hidden" name="csrf_token" value="' . htmlspecialchars($csrfToken) . '">
@@ -108,7 +98,7 @@ $result_pending = $conn->query($sql_pending);
                                 <th>Address</th>
                                 <th>Phone</th>
                                 <th>Payment Method</th>
-                                <th>Total Donations</th>
+                                <th>Amount</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -121,7 +111,7 @@ $result_pending = $conn->query($sql_pending);
                                     echo '<td>' . htmlspecialchars($row["address"]) . '</td>';
                                     echo '<td>' . htmlspecialchars($row["phone"]) . '</td>';
                                     echo '<td>' . htmlspecialchars($row["payment_method"]) . '</td>';
-                                    echo '<td>' . number_format($row["total_donations"], 2) . 'MMK</td>';
+                                    echo '<td>' . number_format($row["amount"], 2) . ' MMK</td>';
                                     echo '<td>
                                     <form action="delete_donor.php" method="POST" style="display:inline;">
                                         <input type="hidden" name="csrf_token" value="' . htmlspecialchars($csrfToken) . '">

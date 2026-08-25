@@ -2,7 +2,7 @@
 require_once 'config.php';
 require_once 'csrf.php';
 
-if (isset($_SESSION['admin_id'])) {
+if (is_admin_authenticated()) {
     header("Location: addashboard.php");
     exit();
 }

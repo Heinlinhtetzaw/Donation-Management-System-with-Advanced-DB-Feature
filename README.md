@@ -47,6 +47,10 @@ No framework, package manager, build step, or automated test suite is required.
 
 > This repository currently has no database migration or schema file. Create the schema in your local database before using the app.
 
+### Optional database hardening
+
+The refactor does not automatically alter your XAMPP database. If you want extra protection against duplicate admin usernames and faster dashboard queries, review and run `database/optional_integrity_migration.sql` manually in phpMyAdmin after taking a backup. The foreign-key statement is deliberately commented out because it must only be enabled after checking for existing orphaned donation records.
+
 ## Project layout
 
 ```text

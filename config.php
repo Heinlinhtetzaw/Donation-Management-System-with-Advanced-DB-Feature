@@ -17,7 +17,11 @@ session_set_cookie_params([
     'samesite' => 'Lax',
 ]);
 
-session_start();
+if (PHP_SAPI !== 'cli') {
+    session_start();
+}
+
+require_once __DIR__ . '/app/helpers.php';
 
 // Database configuration
 define('DB_HOST', 'localhost');
@@ -98,8 +102,11 @@ function save_login_attempts(array $data) {
 function getDBConnection() {
     $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
     if ($conn->connect_error) {
-        die("Database connection failed.");
+        error_log('Database connection failed: ' . $conn->connect_error);
+        http_response_code(500);
+        exit('The service is temporarily unavailable. Please try again later.');
     }
+    $conn->set_charset('utf8mb4');
     return $conn;
 }
 ?> 

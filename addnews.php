@@ -30,6 +30,8 @@ $csrfToken = generate_csrf_token();
 
         <!-- Main Content -->
         <div class="main-content">
+            <?php if ($message = get_flash('success')): ?><p class="message-success"><?php echo e($message); ?></p><?php endif; ?>
+            <?php if ($message = get_flash('error')): ?><p class="message-error"><?php echo e($message); ?></p><?php endif; ?>
             <!-- Add News Form -->
             <div class="form-container">
                 <h2>Add News</h2>

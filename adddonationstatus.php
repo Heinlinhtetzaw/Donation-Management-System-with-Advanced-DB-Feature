@@ -1,6 +1,7 @@
 <?php
 require_once 'auth_check.php';
 require_once 'csrf.php';
+require_once __DIR__ . '/app/partials.php';
 $csrfToken = generate_csrf_token();
 ?>
 <!DOCTYPE html>
@@ -103,21 +104,12 @@ table td a:hover {
 <body>
     <div class="dashboard-container">
         <!-- Sidebar -->
-        <aside class="sidebar">
-            <h2>Admin Panel</h2>
-            <ul>
-                <li><a href="addashboard.php"><i class="fas fa-tachometer-alt"></i>Dashboard</a></li>
-                <li class="active"><a href="adddonationstatus.php"><i class="fas fa-hand-holding-usd"></i>Donations Status</a></li>
-                <li><a href="donor.php"><i class="fas fa-users"></i>Donors</a></li>
-                <li><a href="addfoundation.php"><i class="fas fa-hand-holding-heart"></i>Add Foundation</a></li>
-                <li><a href="addnews.php"><i class="fas fa-newspaper"></i>Add News</a></li>
-                <li><a href="admin_invite.php"><i class="fas fa-key"></i>Invite Code</a></li>
-                <li><a href="logout.php"><i class="fas fa-sign-out-alt"></i>Logout</a></li>
-            </ul>
-        </aside>
+        <?php render_admin_sidebar('donations'); ?>
 
         <!-- Main Content -->
         <div class="main-content">
+            <?php if ($message = get_flash('success')): ?><p class="message-success"><?php echo e($message); ?></p><?php endif; ?>
+            <?php if ($message = get_flash('error')): ?><p class="message-error"><?php echo e($message); ?></p><?php endif; ?>
 <section class="donations-table">
             <h2>Donations Status</h2>
     <div class="table-container">

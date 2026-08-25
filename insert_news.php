@@ -1,72 +1,34 @@
 <?php
 require_once 'auth_check.php';
-require_once 'config.php';
 require_once 'csrf.php';
+require_once __DIR__ . '/app/UploadService.php';
 
-if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-    header("Location: addnews.php");
-    exit();
-}
-
-if (!isset($_POST['csrf_token']) || !validate_csrf_token($_POST['csrf_token'])) {
-    header("Location: addnews.php");
-    exit();
-}
+require_post_request('addnews.php');
+require_valid_csrf('addnews.php');
 
 $conn = getDBConnection();
-
-if (!isset($_FILES["image"]) || $_FILES["image"]["error"] !== UPLOAD_ERR_OK) {
-    die("Invalid image upload.");
-}
-
-$maxSize = 2 * 1024 * 1024; // 2MB
-if ($_FILES["image"]["size"] > $maxSize) {
-    die("Image is too large.");
-}
-
-$tmpName = $_FILES["image"]["tmp_name"];
-$imageInfo = getimagesize($tmpName);
-if ($imageInfo === false) {
-    die("Invalid image file.");
-}
-
-$allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-if (!in_array($imageInfo['mime'], $allowedMimes, true)) {
-    die("Unsupported image type.");
-}
-
-$allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-$ext = strtolower(pathinfo($_FILES["image"]["name"], PATHINFO_EXTENSION));
-if (!in_array($ext, $allowedExts, true)) {
-    die("Unsupported image extension.");
-}
-
-$uploadDir = "uploads/";
-if (!is_dir($uploadDir)) {
-    mkdir($uploadDir, 0755, true);
-}
-
-$safeName = bin2hex(random_bytes(16)) . '.' . $ext;
-$imagePath = $uploadDir . $safeName;
-
-if (!move_uploaded_file($tmpName, $imagePath)) {
-    die("Error uploading image.");
-}
 
 $title = trim($_POST["title"] ?? '');
 $content = trim($_POST["content"] ?? '');
 
 if ($title === '' || $content === '') {
-    die("Invalid news details.");
+    set_flash('error', 'A title and content are required.');
+    redirect_to('addnews.php');
 }
 
-$sql = "INSERT INTO news (title, content, image_path) VALUES (?, ?, ?)";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("sss", $title, $content, $imagePath);
-
-if ($stmt->execute()) {
-    header("Location: addnews.php");
-    exit();
+try {
+    $imagePath = upload_image('image');
+    $stmt = $conn->prepare('INSERT INTO news (title, content, image_path) VALUES (?, ?, ?)');
+    $stmt->bind_param('sss', $title, $content, $imagePath);
+    if (!$stmt->execute()) {
+        remove_uploaded_file($imagePath);
+        throw new RuntimeException('Database insert failed: ' . $stmt->error);
+    }
+    $stmt->close();
+    set_flash('success', 'News article added successfully.');
+} catch (RuntimeException $exception) {
+    error_log('News upload failed: ' . $exception->getMessage());
+    set_flash('error', 'The news article could not be saved. Check the image and try again.');
 }
-
-echo "Error: " . $stmt->error;
+$conn->close();
+redirect_to('addnews.php');

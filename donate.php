@@ -37,6 +37,8 @@ $csrfToken = generate_csrf_token();
     <!-- Donations Form -->
     <div class="form-container">
         <h2>Donate Now</h2>
+        <?php if ($message = get_flash('success')): ?><p class="message-success"><?php echo e($message); ?></p><?php endif; ?>
+        <?php if ($message = get_flash('error')): ?><p class="message-error"><?php echo e($message); ?></p><?php endif; ?>
         <form action="insert_donation.php" method="POST" id="donate-form">
             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
             <!-- Donor Name -->
