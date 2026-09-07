@@ -39,7 +39,8 @@ $conn = getDBConnection();
 $conn->begin_transaction();
 
 try {
-    $foundationCheck = $conn->prepare('SELECT 1 FROM foundations WHERE fid = ?');
+    // Keep the selected foundation from being deleted until this transaction commits.
+    $foundationCheck = $conn->prepare('SELECT 1 FROM foundations WHERE fid = ? LOCK IN SHARE MODE');
     $foundationCheck->bind_param('i', $foundationId);
     $foundationCheck->execute();
     $exists = $foundationCheck->get_result()->num_rows === 1;
@@ -71,6 +72,9 @@ try {
     $history->close();
     $conn->commit();
     set_flash('success', 'Thank you. Your donation reference is ' . $reference . ' and is pending verification.');
+} catch (DomainException $exception) {
+    $conn->rollback();
+    set_flash('error', $exception->getMessage());
 } catch (Throwable $exception) {
     $conn->rollback();
     error_log('Donation insert failed: ' . $exception->getMessage());

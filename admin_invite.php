@@ -2,6 +2,7 @@
 require_once 'auth_check.php';
 require_once 'config.php';
 require_once 'csrf.php';
+require_once __DIR__ . '/app/partials.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!isset($_POST['csrf_token']) || !validate_csrf_token($_POST['csrf_token'])) {
@@ -10,9 +11,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
-    $newCode = generate_admin_invite_code();
-    store_admin_invite_record($newCode, false);
-    $_SESSION['success'] = "New invite code generated.";
+    try {
+        $newCode = generate_admin_invite_code();
+        store_admin_invite_record($newCode, false);
+        $_SESSION['success'] = "New invite code generated.";
+    } catch (Throwable $exception) {
+        error_log('Invite-code generation failed: ' . $exception->getMessage());
+        $_SESSION['error'] = "The invite code could not be generated.";
+    }
     header("Location: admin_invite.php");
     exit();
 }
@@ -90,18 +96,7 @@ $csrfToken = generate_csrf_token();
 </head>
 <body>
     <div class="dashboard-container">
-        <aside class="sidebar">
-            <h2>Admin Panel</h2>
-            <ul>
-                <li><a href="addashboard.php"><i class="fas fa-tachometer-alt"></i>Dashboard</a></li>
-                <li><a href="adddonationstatus.php"><i class="fas fa-hand-holding-usd"></i>Donations Status</a></li>
-                <li><a href="donor.php"><i class="fas fa-users"></i>Donors</a></li>
-                <li><a href="addfoundation.php"><i class="fas fa-hand-holding-heart"></i>Add Foundation</a></li>
-                <li><a href="addnews.php"><i class="fas fa-newspaper"></i>Add News</a></li>
-                <li class="active"><a href="admin_invite.php"><i class="fas fa-key"></i>Invite Code</a></li>
-                <li><a href="logout.php"><i class="fas fa-sign-out-alt"></i>Logout</a></li>
-            </ul>
-        </aside>
+        <?php render_admin_sidebar('invite'); ?>
 
         <div class="invite-container">
             <div class="invite-card">

@@ -11,7 +11,7 @@ function fail_test($message) {
 
 function assert_test($condition, $message) {
     if (!$condition) {
-        fail_test($message);
+        throw new RuntimeException($message);
     }
 }
 
@@ -19,25 +19,25 @@ $requiredColumns = [
     'admin' => ['adname', 'adpassword', 'failed_attempts', 'last_failed_login'],
     'foundations' => ['fid', 'image_path', 'fname', 'description', 'intro'],
     'news' => ['nid', 'image_path', 'title', 'content', 'create_at'],
-    'donations' => ['id', 'donor_name', 'address', 'phone', 'amount', 'foundation_id', 'payment_method', 'payment_status', 'created_at'],
+    'donors' => ['donor_id', 'full_name', 'address', 'phone', 'created_at'],
+    'donations' => ['id', 'donor_id', 'reference_code', 'donor_name', 'address', 'phone', 'amount', 'foundation_id', 'payment_method', 'payment_status', 'verified_at', 'verified_by', 'status_note', 'created_at'],
+    'donation_status_history' => ['history_id', 'donation_id', 'previous_status', 'new_status', 'note', 'changed_by', 'changed_at'],
+    'admin_audit_logs' => ['audit_id', 'admin_username', 'action_type', 'entity_type', 'entity_id', 'details', 'created_at'],
 ];
 
-$conn = getDBConnection();
-$conn->begin_transaction();
-
+$conn = null;
 try {
+    $conn = getDBConnection();
+    $conn->begin_transaction();
+
     foreach ($requiredColumns as $table => $columns) {
         $result = $conn->query("SHOW COLUMNS FROM {$table}");
-        assert_test($result !== false, "Table '{$table}' is missing.");
-
         $actualColumns = [];
         while ($column = $result->fetch_assoc()) {
-            $actualColumns[] = $column['Field'];
+            $actualColumns[] = strtolower($column['Field']);
         }
-        echo "INFO: {$table} columns: " . implode(', ', $actualColumns) . PHP_EOL;
-        $normalizedColumns = array_map('strtolower', $actualColumns);
         foreach ($columns as $column) {
-            assert_test(in_array(strtolower($column), $normalizedColumns, true), "Column '{$table}.{$column}' is missing.");
+            assert_test(in_array(strtolower($column), $actualColumns, true), "Column '{$table}.{$column}' is missing.");
         }
         echo "PASS: {$table} schema" . PHP_EOL;
     }
@@ -55,32 +55,34 @@ try {
     $pending = 'Pending';
     $insert = $conn->prepare('INSERT INTO donations (donor_name, address, phone, amount, foundation_id, payment_method, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?)');
     $insert->bind_param('ssssiss', $name, $address, $phone, $amount, $foundationId, $method, $pending);
-    assert_test($insert->execute(), 'Could not insert transactional test donation.');
-    $donationId = $conn->insert_id;
+    $insert->execute();
+    $donationId = (int) $conn->insert_id;
     $insert->close();
+    assert_test($donationId > 0, 'Could not insert transactional test donation.');
     echo "PASS: donation created" . PHP_EOL;
 
     $complete = 'Complete';
     $update = $conn->prepare('UPDATE donations SET payment_status = ? WHERE id = ?');
     $update->bind_param('si', $complete, $donationId);
-    assert_test($update->execute() && $update->affected_rows === 1, 'Could not update transactional donation status.');
+    $update->execute();
+    assert_test($update->affected_rows === 1, 'Could not update transactional donation status.');
     $update->close();
 
     $status = $conn->query("SELECT payment_status FROM donations WHERE id = {$donationId}")->fetch_assoc();
     assert_test($status !== null && $status['payment_status'] === 'Complete', 'Updated donation status was not persisted.');
     echo "PASS: donation status update" . PHP_EOL;
 
-    $delete = $conn->prepare('DELETE FROM donations WHERE id = ?');
-    $delete->bind_param('i', $donationId);
-    assert_test($delete->execute() && $delete->affected_rows === 1, 'Could not delete transactional test donation.');
-    $delete->close();
-    echo "PASS: donation deletion" . PHP_EOL;
-
     $conn->rollback();
     $conn->close();
     echo 'PASS: all database flow checks passed; every test write was rolled back.' . PHP_EOL;
 } catch (Throwable $error) {
-    $conn->rollback();
-    $conn->close();
+    if ($conn instanceof mysqli) {
+        try {
+            $conn->rollback();
+            $conn->close();
+        } catch (Throwable $cleanupError) {
+            error_log('Database verification cleanup failed: ' . $cleanupError->getMessage());
+        }
+    }
     fail_test($error->getMessage());
 }

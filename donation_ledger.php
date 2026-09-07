@@ -14,13 +14,20 @@ $perPage = 20;
 $where = [];
 if (in_array($status, DONATION_STATUSES, true)) $where[] = "d.payment_status = '" . $conn->real_escape_string($status) . "'";
 if ($foundationId !== null) $where[] = 'd.foundation_id = ' . $foundationId;
-if ($search !== '') { $term = $conn->real_escape_string($search); $where[] = "(d.reference_code LIKE '%{$term}%' OR donor.full_name LIKE '%{$term}%' OR donor.phone LIKE '%{$term}%')"; }
+if ($search !== '') {
+    $term = $conn->real_escape_string($search);
+    $pattern = "'%{$term}%' COLLATE utf8mb4_unicode_ci";
+    $where[] = "(d.reference_code COLLATE utf8mb4_unicode_ci LIKE {$pattern}"
+        . " OR d.donor_name COLLATE utf8mb4_unicode_ci LIKE {$pattern}"
+        . " OR d.phone COLLATE utf8mb4_unicode_ci LIKE {$pattern})";
+}
 if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $from)) $where[] = "d.created_at >= '" . $conn->real_escape_string($from) . " 00:00:00'";
 if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $to)) $where[] = "d.created_at < DATE_ADD('" . $conn->real_escape_string($to) . "', INTERVAL 1 DAY)";
 $whereSql = $where ? ' WHERE ' . implode(' AND ', $where) : '';
-$total = (int) $conn->query('SELECT COUNT(*) total FROM donations d JOIN donors donor ON donor.donor_id=d.donor_id' . $whereSql)->fetch_assoc()['total'];
+$joins = ' FROM donations d LEFT JOIN foundations f ON f.fid=d.foundation_id';
+$total = (int) $conn->query('SELECT COUNT(*) total' . $joins . $whereSql)->fetch_assoc()['total'];
 $pages = max(1, (int) ceil($total / $perPage)); $page = min($page, $pages); $offset = ($page - 1) * $perPage;
-$records = $conn->query('SELECT d.id,d.reference_code,donor.full_name,donor.phone,d.amount,d.payment_method,d.payment_status,d.created_at,f.fname foundation_name FROM donations d JOIN donors donor ON donor.donor_id=d.donor_id JOIN foundations f ON f.fid=d.foundation_id' . $whereSql . ' ORDER BY d.created_at DESC,d.id DESC LIMIT ' . $perPage . ' OFFSET ' . $offset);
+$records = $conn->query('SELECT d.id,d.reference_code,d.donor_name full_name,d.phone,d.amount,d.payment_method,d.payment_status,d.created_at,COALESCE(f.fname,CONCAT(\'Missing foundation #\',d.foundation_id)) foundation_name' . $joins . $whereSql . ' ORDER BY d.created_at DESC,d.id DESC LIMIT ' . $perPage . ' OFFSET ' . $offset);
 $foundations = $conn->query('SELECT fid,fname FROM foundations ORDER BY fname');
 $success = get_flash('success'); $error = get_flash('error');
 function status_class($value) { return strtolower(str_replace(' ', '-', $value)); }

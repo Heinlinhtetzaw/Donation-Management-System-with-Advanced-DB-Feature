@@ -16,38 +16,46 @@ if (isset($_POST["id"])) {
         redirect_to('addfoundation.php');
     }
 
-    $usage = $conn->prepare('SELECT COUNT(*) AS count FROM donations WHERE foundation_id = ?');
-    $usage->bind_param('i', $fid);
-    $usage->execute();
-    $donationCount = (int) $usage->get_result()->fetch_assoc()['count'];
-    $usage->close();
-    if ($donationCount > 0) {
-        set_flash('error', 'This foundation has donation records and cannot be deleted.');
-        $conn->close();
-        redirect_to('addfoundation.php');
-    }
-
-    $image = $conn->prepare('SELECT image_path FROM foundations WHERE fid = ?');
-    $image->bind_param('i', $fid);
-    $image->execute();
-    $record = $image->get_result()->fetch_assoc();
-    $image->close();
-
-    // Delete the foundation
-    $sql = "DELETE FROM foundations WHERE fid = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $fid);
-
-    if ($stmt->execute() && $stmt->affected_rows === 1) {
-        if ($record) {
-            remove_uploaded_file($record['image_path']);
+    $conn->begin_transaction();
+    try {
+        // Serialize deletion against donation submission, which takes a shared lock.
+        $image = $conn->prepare('SELECT image_path FROM foundations WHERE fid = ? FOR UPDATE');
+        $image->bind_param('i', $fid);
+        $image->execute();
+        $record = $image->get_result()->fetch_assoc();
+        $image->close();
+        if (!$record) {
+            throw new RuntimeException('Foundation not found.');
         }
-        set_flash('success', 'Foundation deleted.');
-    } else {
-        set_flash('error', 'Foundation was not found.');
-    }
 
-    $stmt->close();
+        $usage = $conn->prepare('SELECT COUNT(*) AS count FROM donations WHERE foundation_id = ?');
+        $usage->bind_param('i', $fid);
+        $usage->execute();
+        $donationCount = (int) $usage->get_result()->fetch_assoc()['count'];
+        $usage->close();
+        if ($donationCount > 0) {
+            throw new DomainException('Foundation is in use.');
+        }
+
+        $stmt = $conn->prepare('DELETE FROM foundations WHERE fid = ?');
+        $stmt->bind_param('i', $fid);
+        $stmt->execute();
+        if ($stmt->affected_rows !== 1) {
+            throw new RuntimeException('Foundation not found.');
+        }
+        $stmt->close();
+        $conn->commit();
+
+        remove_uploaded_file($record['image_path']);
+        set_flash('success', 'Foundation deleted.');
+    } catch (DomainException $exception) {
+        $conn->rollback();
+        set_flash('error', 'This foundation has donation records and cannot be deleted.');
+    } catch (Throwable $exception) {
+        $conn->rollback();
+        error_log('Foundation deletion failed: ' . $exception->getMessage());
+        set_flash('error', 'The foundation could not be deleted.');
+    }
 } else {
     header("Location: addfoundation.php");
     exit();

@@ -21,13 +21,13 @@
             <li><a href="about.php"><i class="fas fa-building"></i>About</a></li>
             <li><a href="news.php"><i class="fas fa-newspaper"></i>News</a></li>
             <li><a href="donate.php"><i class="fas fa-donate"></i>Donate</a></li>
-            <li><a href="signup.php" class="btn admin"><i class="fas fa-user-plus"></i>Signup</a></li>
+            <li><a href="signup.php" class="btn admin"><i class="fas fa-user-plus"></i>Admin</a></li>
         </ul>
     </nav>
 
     <!-- Hero Section -->
     <div class="hero">
-        <div class="content-container">
+        <div class="content-container">-
             <div class="content">
                 <h1>TOGETHER <br>WE CAN MAKE <br>A DIFFERENCE</h1>
                 <p>To improve our environment</p>

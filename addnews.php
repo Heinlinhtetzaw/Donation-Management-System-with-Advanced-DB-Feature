@@ -1,6 +1,7 @@
 <?php
 require_once 'auth_check.php';
 require_once 'csrf.php';
+require_once __DIR__ . '/app/partials.php';
 $csrfToken = generate_csrf_token();
 ?>
 <!DOCTYPE html>
@@ -15,18 +16,7 @@ $csrfToken = generate_csrf_token();
 <body>
     <div class="dashboard-container">
         <!-- Sidebar -->
-        <aside class="sidebar">
-            <h2>Admin Panel</h2>
-            <ul>
-                <li><a href="addashboard.php"><i class="fas fa-tachometer-alt"></i>Dashboard</a></li>
-                <li><a href="adddonationstatus.php"><i class="fas fa-hand-holding-usd"></i>Donations Status</a></li>
-                <li><a href="donor.php"><i class="fas fa-users"></i>Donors</a></li>
-                <li><a href="addfoundation.php"><i class="fas fa-hand-holding-heart"></i>Add Foundation</a></li>
-                <li class="active"><a href="addnews.php"><i class="fas fa-newspaper"></i>Add News</a></li>
-                <li><a href="admin_invite.php"><i class="fas fa-key"></i>Invite Code</a></li>
-                <li><a href="logout.php"><i class="fas fa-sign-out-alt"></i>Logout</a></li>
-            </ul>
-        </aside>
+        <?php render_admin_sidebar('news'); ?>
 
         <!-- Main Content -->
         <div class="main-content">
@@ -54,9 +44,9 @@ $csrfToken = generate_csrf_token();
                 </form>
             </div>
 
-            <!-- Delete News Section -->
+            <!-- Manage News Section -->
             <div class="delete-section">
-                <h3>Delete Existing News</h3>
+                <h3>Manage Existing News</h3>
                 <table>
                     <thead>
                         <tr>
@@ -72,17 +62,23 @@ $csrfToken = generate_csrf_token();
                         // Fetch news from the database
                         $conn = getDBConnection();
 
-                        $sql = "SELECT nid, image_path, title, content FROM news";
+                        $sql = "SELECT nid, image_path, title, content FROM news ORDER BY create_at DESC, nid DESC";
                         $result = $conn->query($sql);
                         $counter=1;
                         if ($result->num_rows > 0) {
                             while ($row = $result->fetch_assoc()) {
                                 echo '<tr>';
                                 echo '<td>' . $counter . '</td>';
-                                echo '<td><img src="' . $row["image_path"] . '" width="50" height="50"></td>';
+                                echo '<td><img src="' . e($row["image_path"]) . '" alt="" width="50" height="50"></td>';
                                 echo '<td>' . htmlspecialchars($row["title"]) . '</td>';
                                 echo '<td>' . htmlspecialchars(substr($row["content"], 0, 50)) . '...</td>';
-                                echo '<td>
+                                echo '<td><div class="table-actions">
+                                <a class="edit-button" href="edit_news.php?id=' . (int) $row["nid"] . '">
+                                    <i class="fas fa-pen"></i> Edit
+                                </a>
+                                <a class="preview-button" href="preview_news.php?id=' . (int) $row["nid"] . '">
+                                    <i class="fas fa-eye"></i> Preview
+                                </a>
                                 <form action="delete_news.php" method="POST" style="display:inline;">
                                     <input type="hidden" name="csrf_token" value="' . htmlspecialchars($csrfToken) . '">
                                     <input type="hidden" name="id" value="' . (int) $row["nid"] . '">
@@ -90,7 +86,7 @@ $csrfToken = generate_csrf_token();
                                         <i class="fas fa-trash-alt"></i> Delete
                                     </button>
                                 </form>
-                                </td>';
+                                </div></td>';
                                 echo '</tr>';
                                 $counter++;
                             }

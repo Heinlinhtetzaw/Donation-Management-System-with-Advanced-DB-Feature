@@ -39,68 +39,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $conn = getDBConnection();
+    $conn->begin_transaction();
 
-    $countStmt = $conn->prepare("SELECT COUNT(*) AS total FROM admin");
-    $countStmt->execute();
-    $countResult = $countStmt->get_result();
-    $row = $countResult ? $countResult->fetch_assoc() : ['total' => 0];
-    $isFirstAdmin = ((int) $row['total']) === 0;
+    try {
+        $countStmt = $conn->prepare("SELECT COUNT(*) AS total FROM admin");
+        $countStmt->execute();
+        $countResult = $countStmt->get_result();
+        $row = $countResult ? $countResult->fetch_assoc() : ['total' => 0];
+        $countStmt->close();
+        $isFirstAdmin = ((int) $row['total']) === 0;
 
-    if (!$isFirstAdmin) {
-        $inviteRecord = get_admin_invite_record();
-        $expectedInviteCode = $inviteRecord['code'];
-        $inviteUsed = !empty($inviteRecord['used']);
-        if ($expectedInviteCode === '') {
-            $_SESSION['error'] = "Invite code not configured. Ask an admin.";
-            header("Location: signup.php");
-            exit();
+        $check = $conn->prepare("SELECT 1 FROM admin WHERE adname = ?");
+        $check->bind_param("s", $username);
+        $check->execute();
+        $existing = $check->get_result();
+        $usernameExists = $existing->num_rows > 0;
+        $check->close();
+        if ($usernameExists) {
+            throw new DomainException('Username already exists.');
         }
-        if ($inviteUsed) {
-            $_SESSION['error'] = "Invite code already used. Ask an admin.";
-            header("Location: signup.php");
-            exit();
-        }
-        if (!hash_equals($expectedInviteCode, $inviteCode)) {
-            $_SESSION['error'] = "Invalid invite code.";
-            header("Location: signup.php");
-            exit();
-        }
-    }
 
-    $check = $conn->prepare("SELECT 1 FROM admin WHERE adname = ?");
-    $check->bind_param("s", $username);
-    $check->execute();
-    $existing = $check->get_result();
+        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+        $createAdmin = function () use ($conn, $username, $hashedPassword) {
+            $insert = $conn->prepare("INSERT INTO admin (adname, adpassword, failed_attempts) VALUES (?, ?, 0)");
+            $insert->bind_param("ss", $username, $hashedPassword);
+            $insert->execute();
+            $insert->close();
+        };
 
-    if ($existing->num_rows > 0) {
-        $_SESSION['error'] = "Username already exists.";
+        if ($isFirstAdmin) {
+            $createAdmin();
+        } else {
+            // Validation, account creation, and marking the code used occur while
+            // one exclusive file lock is held, preventing two uses of one code.
+            consume_admin_invite_code($inviteCode, $createAdmin);
+        }
+
+        $conn->commit();
+    } catch (DomainException $exception) {
+        $conn->rollback();
+        $conn->close();
+        $_SESSION['error'] = $exception->getMessage();
+        header("Location: signup.php");
+        exit();
+    } catch (Throwable $exception) {
+        $conn->rollback();
+        $conn->close();
+        error_log('Admin signup failed: ' . $exception->getMessage());
+        $_SESSION['error'] = "Signup failed. Please try again.";
         header("Location: signup.php");
         exit();
     }
 
-    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-    $insert = $conn->prepare("INSERT INTO admin (adname, adpassword, failed_attempts) VALUES (?, ?, 0)");
-    $insert->bind_param("ss", $username, $hashedPassword);
-
-    if ($insert->execute()) {
-        if ($isFirstAdmin) {
+    $conn->close();
+    if ($isFirstAdmin) {
+        try {
             $inviteRecord = get_admin_invite_record();
             $newInviteCode = $inviteRecord['code'];
-            if ($newInviteCode === '') {
+            if ($newInviteCode === '' || !empty($inviteRecord['used'])) {
                 $newInviteCode = generate_admin_invite_code();
                 store_admin_invite_record($newInviteCode, false);
             }
             $_SESSION['success'] = "Signup successful. Invite code: " . $newInviteCode;
-        } else {
-            store_admin_invite_record($expectedInviteCode, true);
-            $_SESSION['success'] = "Signup successful. Please log in.";
+        } catch (Throwable $exception) {
+            error_log('Initial invite-code generation failed: ' . $exception->getMessage());
+            $_SESSION['success'] = "Signup successful. Log in to generate an invite code.";
         }
-        header("Location: adlogin.php");
-        exit();
+    } else {
+        $_SESSION['success'] = "Signup successful. Please log in.";
     }
-
-    $_SESSION['error'] = "Signup failed. Please try again.";
-    header("Location: signup.php");
+    header("Location: adlogin.php");
     exit();
 }
 

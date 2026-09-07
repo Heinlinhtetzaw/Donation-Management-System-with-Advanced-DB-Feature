@@ -6,12 +6,12 @@ require_once __DIR__ . '/app/partials.php';
 $conn = getDBConnection();
 
 // Fetch total donations where payment_status is "Complete"
-$sql_total_donations = "SELECT SUM(amount) AS total_donations FROM donations WHERE payment_status = 'Complete'";
+$sql_total_donations = "SELECT COALESCE(SUM(amount), 0) AS total_donations FROM donations WHERE payment_status = 'Complete' AND verified_at IS NOT NULL";
 $result_total_donations = $conn->query($sql_total_donations);
 $total_donations = $result_total_donations->fetch_assoc()["total_donations"];
 
 // Fetch total donors
-$sql_total_donors = "SELECT COUNT(DISTINCT donor_name) AS total_donors FROM donations";
+$sql_total_donors = "SELECT COUNT(*) AS total_donors FROM donors";
 $result_total_donors = $conn->query($sql_total_donors);
 $total_donors = $result_total_donors->fetch_assoc()["total_donors"];
 

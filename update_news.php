@@ -1,0 +1,55 @@
+<?php
+require_once 'auth_check.php';
+require_once 'csrf.php';
+require_once __DIR__ . '/app/UploadService.php';
+
+require_post_request('addnews.php');
+require_valid_csrf('addnews.php');
+
+$id = positive_int($_POST['id'] ?? null);
+$title = trim($_POST['title'] ?? '');
+$content = trim($_POST['content'] ?? '');
+if ($id === null || $title === '' || $content === '') {
+    set_flash('error', 'A title and content are required.');
+    redirect_to('addnews.php');
+}
+
+$conn = getDBConnection();
+$newImagePath = null;
+try {
+    $conn->begin_transaction();
+    $select = $conn->prepare('SELECT image_path FROM news WHERE nid = ? FOR UPDATE');
+    $select->bind_param('i', $id);
+    $select->execute();
+    $news = $select->get_result()->fetch_assoc();
+    $select->close();
+    if (!$news) {
+        throw new RuntimeException('News article not found.');
+    }
+
+    $imagePath = $news['image_path'];
+    if (isset($_FILES['image']) && $_FILES['image']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $newImagePath = upload_image('image');
+        $imagePath = $newImagePath;
+    }
+
+    $update = $conn->prepare('UPDATE news SET image_path = ?, title = ?, content = ? WHERE nid = ?');
+    $update->bind_param('sssi', $imagePath, $title, $content, $id);
+    $update->execute();
+    $update->close();
+    $conn->commit();
+
+    if ($newImagePath !== null) {
+        remove_uploaded_file($news['image_path']);
+    }
+    set_flash('success', 'News article updated successfully.');
+} catch (Throwable $exception) {
+    $conn->rollback();
+    if ($newImagePath !== null) {
+        remove_uploaded_file($newImagePath);
+    }
+    error_log('News update failed: ' . $exception->getMessage());
+    set_flash('error', 'The news article could not be updated. Check the image and try again.');
+}
+$conn->close();
+redirect_to('addnews.php');

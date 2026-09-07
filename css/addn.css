@@ -187,6 +187,55 @@ body {
     margin-right: 5px; /* Space between icon and text */
 }
 
+.table-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+}
+
+.edit-button,
+.preview-button {
+    display: inline-block;
+    padding: 8px 12px;
+    border-radius: 4px;
+    color: white;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.edit-button { background-color: #2878b5; }
+.preview-button { background-color: #61717d; }
+.edit-button:hover { background-color: #1c5b8b; }
+.preview-button:hover { background-color: #46525a; }
+
+.edit-button i,
+.preview-button i { margin-right: 5px; }
+
+.current-image,
+.preview-image {
+    display: block;
+    max-width: 100%;
+    max-height: 280px;
+    margin: 10px auto 20px;
+    border-radius: 8px;
+}
+
+.preview-card {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 28px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    color: #34495e;
+}
+
+.preview-card h1 { margin-bottom: 16px; }
+.preview-card p { margin-bottom: 14px; line-height: 1.6; white-space: pre-wrap; }
+.preview-date { color: #61717d; margin-bottom: 16px; }
+.back-link { display: inline-block; margin-bottom: 20px; color: #2878b5; }
+
 /* Footer */
 footer {
     text-align: center;
@@ -224,4 +273,6 @@ footer p {
     table {
         font-size: 14px;
     }
+
+    .table-actions { align-items: center; }
 }

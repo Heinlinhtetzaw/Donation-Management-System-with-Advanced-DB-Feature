@@ -28,32 +28,43 @@ No framework, package manager, build step, or automated test suite is required.
 ## Local setup
 
 1. Create a MySQL database named `dmssystem`.
-2. Configure the database constants in `config.php` (`DB_HOST`, `DB_USER`, `DB_PASS`, and `DB_NAME`) for your local environment. Do not commit real credentials.
-3. Create the tables used by the application. The code expects these columns:
-
-   - `admin`: `adname`, `adpassword`, `failed_attempts`, `last_failed_at`, `locked_until`
-   - `foundations`: `fid`, `image_path`, `fname`, `description`, `intro`
-   - `news`: `nid`, `image_path`, `title`, `content`
-   - `donations`: `id`, `donor_name`, `address`, `phone`, `amount`, `foundation_id`, `payment_method`, `payment_status`, `created_at`
-
+2. Create or import the core database directly in phpMyAdmin. The repository intentionally does not contain `.sql` schema or migration files.
+3. Configure the database constants in `config.php` (`DB_HOST`, `DB_USER`, `DB_PASS`, and `DB_NAME`) for your local environment. Do not commit real credentials.
 4. Ensure PHP can write to `uploads/` and `data/`. These folders hold runtime content and are intentionally ignored by Git.
-5. Start the application from the project root:
+5. Optionally verify the configured database from the project root:
+
+   ```powershell
+   php database/verify_live_database.php
+   ```
+
+6. Start the application from the project root:
 
    ```powershell
    php -S localhost:8000
    ```
 
-6. Open <http://localhost:8000/index.php>. Use `adlogin.php` to access the administrator area.
+7. Open <http://localhost:8000/index.php>. Use `signup.php` to create the first administrator, then use `adlogin.php` for administrator access.
 
-> This repository currently has no database migration or schema file. Create the schema in your local database before using the app.
+### Core database in phpMyAdmin
 
-### Optional database hardening
+The phpMyAdmin database must contain `admin`, `foundations`, `news`, `donors`, `donations`, `donation_status_history`, and `admin_audit_logs`. Keep administrator names, donor names, donor phone numbers, and donation reference codes unique. Donation records must reference valid donors and foundations, and current donation statuses must be `Pending` or `Complete`.
 
-The refactor does not automatically alter your XAMPP database. If you want extra protection against duplicate admin usernames and faster dashboard queries, review and run `database/optional_integrity_migration.sql` manually in phpMyAdmin after taking a backup. The foreign-key statement is deliberately commented out because it must only be enabled after checking for existing orphaned donation records.
+For an existing database, first find donor names connected to more than one phone in phpMyAdmin's SQL tab:
 
-### Advanced donation administration
+```sql
+SELECT full_name, COUNT(*) AS donor_records,
+       GROUP_CONCAT(phone ORDER BY phone) AS phones
+FROM donors
+GROUP BY full_name
+HAVING COUNT(DISTINCT phone) > 1;
+```
 
-Run `database/002_advanced_donation_administration.sql` **once** after taking a database backup to enable the advanced admin workspace. It adds reusable donors, donation reference codes, status history, and administrator audit logs, and migrates existing records without deleting them.
+Resolve every returned conflict without deleting donation history, then enforce one donor name per phone:
+
+```sql
+ALTER TABLE donors
+ADD UNIQUE INDEX uq_donors_full_name (full_name);
+```
 
 After the migration, the admin sidebar provides:
 
@@ -62,7 +73,7 @@ After the migration, the admin sidebar provides:
 - **Reports**: completed-donation totals by foundation, payment method, and month.
 - **Audit Log**: a chronological record of administrator changes.
 
-Use the new `update_donation_status.php` workflow from a donation detail page. It records the prior status, new status, administrator, timestamp, and optional verification note. Do not use the legacy status page for new administration work.
+Use the new `update_donation_status.php` workflow from a donation detail page. It supports only **Pending** and **Complete**, and records the prior status, new status, administrator, timestamp, and optional note. Do not use the legacy status page for new administration work.
 
 ## Project layout
 
@@ -74,6 +85,7 @@ Use the new `update_donation_status.php` workflow from a donation detail page. I
 ├── insert_*.php, delete_*.php                   Form-processing endpoints
 ├── update_payment_status.php                     Donation-status endpoint
 ├── config.php, auth_check.php, csrf.php          Shared configuration and security helpers
+├── database/verify_live_database.php              Read/rollback checks for phpMyAdmin schema
 ├── css/                                          Page stylesheets
 ├── js/                                           Client-side scripts
 ├── image/                                        Versioned site imagery

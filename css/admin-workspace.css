@@ -19,8 +19,10 @@
 .workspace-table tbody tr:hover { background: #f7f9fa; }
 .record-link { color: #1c659b; font-weight: 700; text-decoration: none; }
 .record-link:hover { text-decoration: underline; }
+.audit-record-link { display: inline-flex; align-items: center; gap: 7px; background: #e8f1f7; border: 1px solid #b9d2e3; border-radius: 6px; color: #1c659b; font-weight: 700; padding: 7px 10px; text-decoration: none; white-space: nowrap; }
+.audit-record-link:hover, .audit-record-link:focus { background: #d7e9f4; color: #124c76; text-decoration: underline; }
 .status-badge { display: inline-block; border-radius: 14px; padding: 4px 9px; background: #edf1f3; color: #2c3e50; font-size: .85rem; font-weight: 700; }
-.status-badge.complete { background: #d8f3df; color: #177432; }.status-badge.pending { background: #fff3cd; color: #8a6200; }.status-badge.rejected, .status-badge.cancelled { background: #f9d9dc; color: #9c2430; }
+.status-badge.complete { background: #d8f3df; color: #177432; }.status-badge.pending { background: #fff3cd; color: #8a6200; }
 .stats-grid, .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; }
 .stat-card { padding: 18px; }.stat-card small { display: block; color: #6a7780; margin-bottom: 8px; }.stat-card strong { color: #2c3e50; font-size: 1.2rem; }
 .detail-card { background: #f7f9fa; border-left: 4px solid orange; padding: 16px; border-radius: 6px; }.detail-card small { display: block; color: #6a7780; margin-bottom: 7px; }

@@ -29,26 +29,47 @@ define('DB_USER', 'root');
 define('DB_PASS', '');
 define('DB_NAME', 'dmssystem');
 
-// Admin signup invite code
+// Fallback admin signup invite code used only when no runtime invite record exists.
 // Leave empty to allow first admin creation, then generate/store a one-time code.
 define('ADMIN_INVITE_CODE', '');
 
-function get_admin_invite_record() {
-    $code = trim(ADMIN_INVITE_CODE);
-    if ($code !== '') {
-        return ['code' => $code, 'used' => false];
+function admin_invite_record_path() {
+    return __DIR__ . '/data/admin_invite_code.json';
+}
+
+function decode_admin_invite_record($payload) {
+    $data = json_decode((string) $payload, true);
+    if (!is_array($data) || !isset($data['code']) || !is_string($data['code'])) {
+        return null;
     }
-    $path = __DIR__ . '/data/admin_invite_code.json';
-    if (is_readable($path)) {
-        $data = json_decode(file_get_contents($path), true);
-        if (is_array($data)) {
-            return [
-                'code' => isset($data['code']) ? (string) $data['code'] : '',
-                'used' => !empty($data['used']),
-            ];
+
+    return [
+        'code' => $data['code'],
+        'used' => !empty($data['used']),
+    ];
+}
+
+function get_admin_invite_record() {
+    $path = admin_invite_record_path();
+    if (is_file($path)) {
+        $handle = fopen($path, 'rb');
+        if ($handle === false) {
+            return ['code' => '', 'used' => true];
+        }
+
+        try {
+            if (!flock($handle, LOCK_SH)) {
+                return ['code' => '', 'used' => true];
+            }
+            $record = decode_admin_invite_record(stream_get_contents($handle));
+            flock($handle, LOCK_UN);
+            return $record ?? ['code' => '', 'used' => true];
+        } finally {
+            fclose($handle);
         }
     }
-    return ['code' => '', 'used' => false];
+
+    return ['code' => trim(ADMIN_INVITE_CODE), 'used' => false];
 }
 
 function generate_admin_invite_code() {
@@ -57,11 +78,78 @@ function generate_admin_invite_code() {
 
 function store_admin_invite_record($code, $used = false) {
     $dir = __DIR__ . '/data';
-    if (!is_dir($dir)) {
-        mkdir($dir, 0755, true);
+    if (!is_dir($dir) && !mkdir($dir, 0755, true)) {
+        throw new RuntimeException('The invite-code store is unavailable.');
     }
-    $payload = json_encode(['code' => $code, 'used' => (bool) $used], JSON_PRETTY_PRINT);
-    file_put_contents($dir . '/admin_invite_code.json', $payload);
+
+    $path = admin_invite_record_path();
+    $handle = fopen($path, 'c+');
+    if ($handle === false) {
+        throw new RuntimeException('The invite-code store is unavailable.');
+    }
+
+    try {
+        if (!flock($handle, LOCK_EX)) {
+            throw new RuntimeException('The invite-code store could not be locked.');
+        }
+        write_admin_invite_record($handle, $code, $used);
+        flock($handle, LOCK_UN);
+    } finally {
+        fclose($handle);
+    }
+}
+
+function write_admin_invite_record($handle, $code, $used) {
+    $payload = json_encode(
+        ['code' => (string) $code, 'used' => (bool) $used],
+        JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR
+    );
+    rewind($handle);
+    if (!ftruncate($handle, 0) || fwrite($handle, $payload) !== strlen($payload) || !fflush($handle)) {
+        throw new RuntimeException('The invite-code store could not be updated.');
+    }
+}
+
+function consume_admin_invite_code($submittedCode, callable $onValid) {
+    $dir = __DIR__ . '/data';
+    if (!is_dir($dir) && !mkdir($dir, 0755, true)) {
+        throw new RuntimeException('The invite-code store is unavailable.');
+    }
+
+    $path = admin_invite_record_path();
+    $recordExisted = is_file($path);
+    $handle = fopen($path, 'c+');
+    if ($handle === false) {
+        throw new RuntimeException('The invite-code store is unavailable.');
+    }
+
+    try {
+        if (!flock($handle, LOCK_EX)) {
+            throw new RuntimeException('The invite-code store could not be locked.');
+        }
+
+        rewind($handle);
+        $record = decode_admin_invite_record(stream_get_contents($handle));
+        if ($record === null && !$recordExisted) {
+            $record = ['code' => trim(ADMIN_INVITE_CODE), 'used' => false];
+        }
+        if ($record === null || $record['code'] === '') {
+            throw new DomainException('Invite code not configured. Ask an admin.');
+        }
+        if ($record['used']) {
+            throw new DomainException('Invite code already used. Ask an admin.');
+        }
+        if (!hash_equals($record['code'], (string) $submittedCode)) {
+            throw new DomainException('Invalid invite code.');
+        }
+
+        $result = $onValid();
+        write_admin_invite_record($handle, $record['code'], true);
+        flock($handle, LOCK_UN);
+        return $result;
+    } finally {
+        fclose($handle);
+    }
 }
 
 function get_client_ip() {
@@ -100,13 +188,19 @@ function save_login_attempts(array $data) {
 
 // Create connection function
 function getDBConnection() {
-    $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-    if ($conn->connect_error) {
-        error_log('Database connection failed: ' . $conn->connect_error);
+    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+
+    try {
+        $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+        $conn->set_charset('utf8mb4');
+    } catch (mysqli_sql_exception $exception) {
+        error_log('Database connection failed: ' . $exception->getMessage());
+        if (PHP_SAPI === 'cli') {
+            throw new RuntimeException('Database connection failed.', 0, $exception);
+        }
         http_response_code(500);
         exit('The service is temporarily unavailable. Please try again later.');
     }
-    $conn->set_charset('utf8mb4');
+
     return $conn;
 }
-?> 
