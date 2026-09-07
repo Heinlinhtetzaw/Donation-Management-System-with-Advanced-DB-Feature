@@ -1,6 +1,7 @@
 <?php
 require_once 'auth_check.php';
 require_once 'csrf.php';
+require_once __DIR__ . '/app/AdminAuditService.php';
 
 require_post_request('addnews.php');
 require_valid_csrf('addnews.php');
@@ -16,27 +17,35 @@ if (isset($_POST["id"])) {
         redirect_to('addnews.php');
     }
 
-    $image = $conn->prepare('SELECT image_path FROM news WHERE nid = ?');
-    $image->bind_param('i', $nid);
-    $image->execute();
-    $record = $image->get_result()->fetch_assoc();
-    $image->close();
-
-    // Delete the news
-    $sql = "DELETE FROM news WHERE nid = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $nid);
-
-    if ($stmt->execute() && $stmt->affected_rows === 1) {
-        if ($record) {
-            remove_uploaded_file($record['image_path']);
+    $conn->begin_transaction();
+    try {
+        $admin = current_admin_identity($conn);
+        $image = $conn->prepare('SELECT image_path, title FROM news WHERE nid = ? FOR UPDATE');
+        $image->bind_param('i', $nid);
+        $image->execute();
+        $record = $image->get_result()->fetch_assoc();
+        $image->close();
+        if (!$record) {
+            throw new RuntimeException('News article not found.');
         }
-        set_flash('success', 'News article deleted.');
-    } else {
-        set_flash('error', 'News article was not found.');
-    }
 
-    $stmt->close();
+        $stmt = $conn->prepare('DELETE FROM news WHERE nid = ?');
+        $stmt->bind_param('i', $nid);
+        $stmt->execute();
+        if ($stmt->affected_rows !== 1) {
+            throw new RuntimeException('News article not found.');
+        }
+        $stmt->close();
+        write_admin_audit($conn, $admin, 'deleted', 'news', $nid, 'Deleted news article: ' . $record['title']);
+        $conn->commit();
+
+        remove_uploaded_file($record['image_path']);
+        set_flash('success', 'News article deleted.');
+    } catch (Throwable $exception) {
+        $conn->rollback();
+        error_log('News deletion failed: ' . $exception->getMessage());
+        set_flash('error', 'The news article could not be deleted.');
+    }
 } else {
     header("Location: addnews.php");
     exit();

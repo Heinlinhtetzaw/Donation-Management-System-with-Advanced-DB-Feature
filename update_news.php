@@ -2,6 +2,7 @@
 require_once 'auth_check.php';
 require_once 'csrf.php';
 require_once __DIR__ . '/app/UploadService.php';
+require_once __DIR__ . '/app/AdminAuditService.php';
 
 require_post_request('addnews.php');
 require_valid_csrf('addnews.php');
@@ -18,7 +19,8 @@ $conn = getDBConnection();
 $newImagePath = null;
 try {
     $conn->begin_transaction();
-    $select = $conn->prepare('SELECT image_path FROM news WHERE nid = ? FOR UPDATE');
+    $admin = current_admin_identity($conn);
+    $select = $conn->prepare('SELECT image_path, title FROM news WHERE nid = ? FOR UPDATE');
     $select->bind_param('i', $id);
     $select->execute();
     $news = $select->get_result()->fetch_assoc();
@@ -37,6 +39,7 @@ try {
     $update->bind_param('sssi', $imagePath, $title, $content, $id);
     $update->execute();
     $update->close();
+    write_admin_audit($conn, $admin, 'updated', 'news', $id, 'Updated news article: ' . $news['title'] . ' → ' . $title);
     $conn->commit();
 
     if ($newImagePath !== null) {

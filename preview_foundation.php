@@ -7,7 +7,7 @@ if ($id === null) {
     redirect_to('addfoundation.php');
 }
 $conn = getDBConnection();
-$stmt = $conn->prepare('SELECT image_path, fname, description, intro FROM foundations WHERE fid = ?');
+$stmt = $conn->prepare("SELECT f.image_path, f.fname, f.description, f.intro, COALESCE(a.adname, 'Legacy / unknown') AS created_by FROM foundations f LEFT JOIN admin a ON a.admin_id = f.created_by_admin_id WHERE f.fid = ?");
 $stmt->bind_param('i', $id);
 $stmt->execute();
 $foundation = $stmt->get_result()->fetch_assoc();
@@ -34,6 +34,7 @@ if (!$foundation) {
             <article class="preview-card">
                 <a class="back-link" href="addfoundation.php"><i class="fas fa-arrow-left"></i> Back to foundations</a>
                 <h1><?= e($foundation['fname']) ?></h1>
+                <p><strong>Created by</strong><br><?= e($foundation['created_by']) ?></p>
                 <img class="preview-image" src="<?= e($foundation['image_path']) ?>" alt="<?= e($foundation['fname']) ?>">
                 <p><strong>Description</strong><br><?= e($foundation['description']) ?></p>
                 <p><strong>Introduction</strong><br><?= e($foundation['intro']) ?></p>

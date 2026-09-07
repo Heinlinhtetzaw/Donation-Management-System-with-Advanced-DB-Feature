@@ -7,7 +7,7 @@ if ($id === null) {
     redirect_to('addnews.php');
 }
 $conn = getDBConnection();
-$stmt = $conn->prepare('SELECT image_path, title, content, create_at FROM news WHERE nid = ?');
+$stmt = $conn->prepare("SELECT n.image_path, n.title, n.content, n.create_at, COALESCE(a.adname, 'Legacy / unknown') AS created_by FROM news n LEFT JOIN admin a ON a.admin_id = n.created_by_admin_id WHERE n.nid = ?");
 $stmt->bind_param('i', $id);
 $stmt->execute();
 $news = $stmt->get_result()->fetch_assoc();
@@ -35,6 +35,7 @@ if (!$news) {
                 <a class="back-link" href="addnews.php"><i class="fas fa-arrow-left"></i> Back to news</a>
                 <h1><?= e($news['title']) ?></h1>
                 <p class="preview-date"><?= e($news['create_at']) ?></p>
+                <p><strong>Created by</strong><br><?= e($news['created_by']) ?></p>
                 <img class="preview-image" src="<?= e($news['image_path']) ?>" alt="<?= e($news['title']) ?>">
                 <p><?= e($news['content']) ?></p>
             </article>

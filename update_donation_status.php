@@ -8,10 +8,13 @@ $conn=getDBConnection(); $conn->begin_transaction();
 try {
     $current=$conn->prepare('SELECT payment_status FROM donations WHERE id=? FOR UPDATE'); $current->bind_param('i',$id); $current->execute(); $record=$current->get_result()->fetch_assoc(); $current->close();
     if (!$record) throw new RuntimeException('Donation record not found.');
-    $old=$record['payment_status']; $admin=$_SESSION['admin_username'];
-    $verifiedBy = $status === 'Complete' ? $admin : null;
-    $update=$conn->prepare("UPDATE donations SET payment_status=?, status_note=?, verified_at=CASE WHEN ?='Complete' THEN CURRENT_TIMESTAMP ELSE NULL END, verified_by=? WHERE id=?"); $update->bind_param('ssssi',$status,$note,$status,$verifiedBy,$id); $update->execute(); $update->close();
-    $history=$conn->prepare('INSERT INTO donation_status_history (donation_id,previous_status,new_status,note,changed_by) VALUES (?,?,?,?,?)'); $history->bind_param('issss',$id,$old,$status,$note,$admin); $history->execute(); $history->close();
+    $old=$record['payment_status']; $admin=current_admin_identity($conn);
+    $adminUsername = $admin['username'];
+    $adminId = $admin['id'];
+    $verifiedBy = $status === 'Complete' ? $admin['username'] : null;
+    $verifiedByAdminId = $status === 'Complete' ? $admin['id'] : null;
+    $update=$conn->prepare("UPDATE donations SET payment_status=?, status_note=?, verified_at=CASE WHEN ?='Complete' THEN CURRENT_TIMESTAMP ELSE NULL END, verified_by=?, verified_by_admin_id=? WHERE id=?"); $update->bind_param('ssssii',$status,$note,$status,$verifiedBy,$verifiedByAdminId,$id); $update->execute(); $update->close();
+    $history=$conn->prepare('INSERT INTO donation_status_history (donation_id,previous_status,new_status,note,changed_by,changed_by_admin_id) VALUES (?,?,?,?,?,?)'); $history->bind_param('issssi',$id,$old,$status,$note,$adminUsername,$adminId); $history->execute(); $history->close();
     write_donation_audit($conn,$admin,'status_changed',$id,$old . ' → ' . $status . ($note !== '' ? ': ' . $note : ''));
     $conn->commit(); set_flash('success','Donation status updated and recorded in its audit history.');
 } catch(Throwable $e) { $conn->rollback(); error_log('Donation status update failed: '.$e->getMessage()); set_flash('error','The donation could not be updated.'); }

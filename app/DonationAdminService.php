@@ -1,17 +1,15 @@
 <?php
 
+require_once __DIR__ . '/AdminAuditService.php';
+
 const DONATION_STATUSES = ['Pending', 'Complete'];
 
 function donation_reference_for_id($id) {
     return 'DON-' . str_pad((string) $id, 8, '0', STR_PAD_LEFT);
 }
 
-function write_donation_audit(mysqli $conn, $admin, $action, $entityId, $details) {
-    $stmt = $conn->prepare('INSERT INTO admin_audit_logs (admin_username, action_type, entity_type, entity_id, details) VALUES (?, ?, \'donation\', ?, ?)');
-    $entityId = (string) $entityId;
-    $stmt->bind_param('ssss', $admin, $action, $entityId, $details);
-    $stmt->execute();
-    $stmt->close();
+function write_donation_audit(mysqli $conn, array $admin, $action, $entityId, $details) {
+    write_admin_audit($conn, $admin, $action, 'donation', $entityId, $details);
 }
 
 function ensure_donor(mysqli $conn, $name, $address, $phone) {

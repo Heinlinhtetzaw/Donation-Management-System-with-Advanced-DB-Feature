@@ -1,6 +1,7 @@
 <?php
 require_once 'auth_check.php';
 require_once 'csrf.php';
+require_once __DIR__ . '/app/AdminAuditService.php';
 
 require_post_request('addfoundation.php');
 require_valid_csrf('addfoundation.php');
@@ -18,8 +19,9 @@ if (isset($_POST["id"])) {
 
     $conn->begin_transaction();
     try {
+        $admin = current_admin_identity($conn);
         // Serialize deletion against donation submission, which takes a shared lock.
-        $image = $conn->prepare('SELECT image_path FROM foundations WHERE fid = ? FOR UPDATE');
+        $image = $conn->prepare('SELECT image_path, fname FROM foundations WHERE fid = ? FOR UPDATE');
         $image->bind_param('i', $fid);
         $image->execute();
         $record = $image->get_result()->fetch_assoc();
@@ -44,6 +46,7 @@ if (isset($_POST["id"])) {
             throw new RuntimeException('Foundation not found.');
         }
         $stmt->close();
+        write_admin_audit($conn, $admin, 'deleted', 'foundation', $fid, 'Deleted foundation: ' . $record['fname']);
         $conn->commit();
 
         remove_uploaded_file($record['image_path']);

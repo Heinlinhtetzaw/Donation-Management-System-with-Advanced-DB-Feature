@@ -54,6 +54,7 @@ $csrfToken = generate_csrf_token();
                             <th>Image</th>
                             <th>Title</th>
                             <th>Content</th>
+                            <th>Created by</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -62,7 +63,7 @@ $csrfToken = generate_csrf_token();
                         // Fetch news from the database
                         $conn = getDBConnection();
 
-                        $sql = "SELECT nid, image_path, title, content FROM news ORDER BY create_at DESC, nid DESC";
+                        $sql = "SELECT n.nid, n.image_path, n.title, n.content, COALESCE(a.adname, 'Legacy / unknown') AS created_by FROM news n LEFT JOIN admin a ON a.admin_id = n.created_by_admin_id ORDER BY n.create_at DESC, n.nid DESC";
                         $result = $conn->query($sql);
                         $counter=1;
                         if ($result->num_rows > 0) {
@@ -72,6 +73,7 @@ $csrfToken = generate_csrf_token();
                                 echo '<td><img src="' . e($row["image_path"]) . '" alt="" width="50" height="50"></td>';
                                 echo '<td>' . htmlspecialchars($row["title"]) . '</td>';
                                 echo '<td>' . htmlspecialchars(substr($row["content"], 0, 50)) . '...</td>';
+                                echo '<td>' . e($row["created_by"]) . '</td>';
                                 echo '<td><div class="table-actions">
                                 <a class="edit-button" href="edit_news.php?id=' . (int) $row["nid"] . '">
                                     <i class="fas fa-pen"></i> Edit
@@ -91,7 +93,7 @@ $csrfToken = generate_csrf_token();
                                 $counter++;
                             }
                         } else {
-                            echo '<tr><td colspan="5">No news found.</td></tr>';
+                            echo '<tr><td colspan="6">No news found.</td></tr>';
                         }
 
                         $conn->close();

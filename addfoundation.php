@@ -60,6 +60,7 @@ $csrfToken = generate_csrf_token();
                             <th>Image</th>
                             <th>Foundation-name</th>
                             <th>Description</th>
+                            <th>Created by</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -68,7 +69,7 @@ $csrfToken = generate_csrf_token();
                         // Fetch foundations from the database
                         $conn = getDBConnection();
 
-                        $sql = "SELECT fid, image_path, fname, description FROM foundations ORDER BY fid DESC";
+                        $sql = "SELECT f.fid, f.image_path, f.fname, f.description, COALESCE(a.adname, 'Legacy / unknown') AS created_by FROM foundations f LEFT JOIN admin a ON a.admin_id = f.created_by_admin_id ORDER BY f.fid DESC";
                         $result = $conn->query($sql);
                         $counter=1;
                         if ($result->num_rows > 0) {
@@ -78,6 +79,7 @@ $csrfToken = generate_csrf_token();
                                 echo '<td><img src="' . e($row["image_path"]) . '" alt="" width="50" height="50"></td>';
                                 echo '<td>' . htmlspecialchars($row["fname"]) . '</td>';
                                 echo '<td>' . htmlspecialchars($row["description"]) . '</td>';
+                                echo '<td>' . e($row["created_by"]) . '</td>';
                                 echo '<td><div class="table-actions">
                                 <a class="edit-button" href="edit_foundation.php?id=' . (int) $row["fid"] . '">
                                     <i class="fas fa-pen"></i> Edit
@@ -97,7 +99,7 @@ $csrfToken = generate_csrf_token();
                                 $counter++;
                             }
                         } else {
-                            echo '<tr><td colspan="5">No foundations found.</td></tr>';
+                            echo '<tr><td colspan="6">No foundations found.</td></tr>';
                         }
 
                         $conn->close();

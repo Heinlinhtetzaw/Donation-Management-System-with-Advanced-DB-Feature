@@ -60,7 +60,7 @@ if ($ipFailed >= $maxAttempts) {
     $ipLastFailed = 0;
 }
 $stmt = $conn->prepare(
-    "SELECT adname, adpassword, failed_attempts, last_failed_login, " .
+    "SELECT admin_id, adname, adpassword, failed_attempts, last_failed_login, " .
     "TIMESTAMPDIFF(SECOND, last_failed_login, NOW()) AS elapsed_seconds " .
     "FROM admin WHERE adname = ?"
 );
@@ -114,6 +114,7 @@ if ($result->num_rows === 1) {
 
     if ($isValidPassword) {
         session_regenerate_id(true);
+        $_SESSION['admin_id'] = (int) $admin['admin_id'];
         $_SESSION['admin_username'] = $admin['adname'];
         $_SESSION['LAST_ACTIVITY'] = time();
 
