@@ -102,14 +102,14 @@ $csrfToken = generate_csrf_token();
             <div class="invite-card">
                 <h2>Admin Invite Code</h2>
                 <?php if ($successMessage !== ''): ?>
-                    <div class="message-success"><?php echo htmlspecialchars($successMessage); ?></div>
+                    <div class="message-success"><?= e($successMessage) ?></div>
                 <?php endif; ?>
                 <?php if ($errorMessage !== ''): ?>
-                    <div class="message-error"><?php echo htmlspecialchars($errorMessage); ?></div>
+                    <div class="message-error"><?= e($errorMessage) ?></div>
                 <?php endif; ?>
 
                 <div class="invite-code">
-                    <?php echo $currentCode !== '' ? htmlspecialchars($currentCode) : 'No code generated yet'; ?>
+                    <?= $currentCode !== '' ? e($currentCode) : 'No code generated yet' ?>
                 </div>
                 <div class="invite-status">
                     Status: <?php echo $currentCode === '' ? 'Not set' : ($isUsed ? 'Used' : 'Active'); ?>
@@ -117,7 +117,7 @@ $csrfToken = generate_csrf_token();
 
                 <div class="invite-actions">
                     <form action="admin_invite.php" method="POST">
-                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
+                        <input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>">
                         <button type="submit">Generate New Code</button>
                     </form>
                 </div>

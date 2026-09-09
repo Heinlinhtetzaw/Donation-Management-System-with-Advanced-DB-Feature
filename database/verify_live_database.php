@@ -4,6 +4,7 @@
 
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../app/AdminAuditService.php';
+require_once __DIR__ . '/../app/DonationAdminService.php';
 
 function fail_test($message) {
     fwrite(STDERR, "FAIL: {$message}" . PHP_EOL);
@@ -17,17 +18,20 @@ function assert_test($condition, $message) {
 }
 
 $requiredColumns = [
-    'admin' => ['adname', 'adpassword', 'failed_attempts', 'last_failed_login'],
-    'foundations' => ['fid', 'created_by_admin_id', 'image_path', 'fname', 'description', 'intro'],
+    'admin' => ['admin_id', 'adname', 'adpassword', 'failed_attempts', 'last_failed_login'],
+    'foundations' => ['fid', 'created_by_admin_id', 'image_path', 'fname', 'description', 'intro', 'create_at'],
     'news' => ['nid', 'created_by_admin_id', 'image_path', 'title', 'content', 'create_at'],
     'donors' => ['donor_id', 'full_name', 'address', 'phone', 'created_at'],
-    'donations' => ['id', 'donor_id', 'reference_code', 'donor_name', 'address', 'phone', 'amount', 'foundation_id', 'payment_method', 'payment_status', 'verified_at', 'verified_by', 'verified_by_admin_id', 'status_note', 'created_at'],
+    'donations' => ['id', 'donor_id', 'reference_code', 'donor_name', 'address', 'phone', 'amount', 'foundation_id', 'payment_method', 'payment_status', 'verified_at', 'verified_by', 'verified_by_admin_id', 'status_note', 'created_at', 'updated_at'],
     'donation_status_history' => ['history_id', 'donation_id', 'previous_status', 'new_status', 'note', 'changed_by', 'changed_by_admin_id', 'changed_at'],
     'admin_audit_logs' => ['audit_id', 'admin_id', 'admin_username', 'action_type', 'entity_type', 'entity_id', 'details', 'created_at'],
 ];
 
 $requiredForeignKeys = [
+    'donations.donor_id' => 'donors.donor_id',
+    'donations.foundation_id' => 'foundations.fid',
     'donations.verified_by_admin_id' => 'admin.admin_id',
+    'donation_status_history.donation_id' => 'donations.id',
     'donation_status_history.changed_by_admin_id' => 'admin.admin_id',
     'admin_audit_logs.admin_id' => 'admin.admin_id',
     'foundations.created_by_admin_id' => 'admin.admin_id',
@@ -58,13 +62,37 @@ try {
     );
     $actualForeignKeys = [];
     while ($foreignKey = $foreignKeyResult->fetch_assoc()) {
-        $actualForeignKeys[$foreignKey['TABLE_NAME'] . '.' . $foreignKey['COLUMN_NAME']] =
-            $foreignKey['REFERENCED_TABLE_NAME'] . '.' . $foreignKey['REFERENCED_COLUMN_NAME'];
+        $key = strtolower($foreignKey['TABLE_NAME'] . '.' . $foreignKey['COLUMN_NAME']);
+        $actualForeignKeys[$key] = strtolower(
+            $foreignKey['REFERENCED_TABLE_NAME'] . '.' . $foreignKey['REFERENCED_COLUMN_NAME']
+        );
     }
     foreach ($requiredForeignKeys as $column => $reference) {
         assert_test(($actualForeignKeys[$column] ?? null) === $reference, "Foreign key '{$column}' does not reference '{$reference}'.");
     }
     echo "PASS: administrator foreign keys" . PHP_EOL;
+
+    $filterValues = [];
+    $filterTypes = '';
+    $filterSql = donation_filter_clause(
+        donation_ledger_filters([
+            'q' => "%' OR 1=1 --",
+            'from' => '2026-02-30',
+            'status' => 'Pending',
+        ]),
+        $filterValues,
+        $filterTypes
+    );
+    $filterCheck = execute_prepared(
+        $conn,
+        'SELECT COUNT(*) AS total FROM donations d' . $filterSql,
+        $filterTypes,
+        $filterValues
+    );
+    $filterCount = (int) $filterCheck->get_result()->fetch_assoc()['total'];
+    $filterCheck->close();
+    assert_test($filterCount >= 0, 'Prepared donation filters did not execute.');
+    echo "PASS: prepared donation ledger filters" . PHP_EOL;
 
     $admin = $conn->query('SELECT admin_id, adname FROM admin ORDER BY admin_id ASC LIMIT 1')->fetch_assoc();
     assert_test($admin !== null, 'At least one administrator is required for the administration flow test.');

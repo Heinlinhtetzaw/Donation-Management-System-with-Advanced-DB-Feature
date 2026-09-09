@@ -1,5 +1,5 @@
 <?php
-require_once 'config.php';
+require_once __DIR__ . '/config.php';
 
 require_admin();
 
@@ -13,4 +13,3 @@ if (isset($_SESSION['LAST_ACTIVITY']) &&
 }
 
 $_SESSION['LAST_ACTIVITY'] = time();
-?>

@@ -78,6 +78,7 @@ body::before {
 
 .logo {
     display: flex;
+    text-decoration: none;
     align-items: center;
     gap: 10px; /* Space between icon and text */
     font-family: 'Poppins', sans-serif; /* Modern font */
@@ -307,7 +308,7 @@ body::before {
     padding: 20px;
     max-width: 1200px;
     margin: 0 auto;
-    align-items: flex-start; /* Prevent stretching */}
+    align-items: stretch; /* Keep cards in each row the same height */}
 
 /* News Card */
 .news-card {
@@ -386,6 +387,7 @@ body::before {
 
 .news-card .read-more-btn {
     background-color: #333;
+    border: 0;
 }
 
 .news-card .read-more-btn:hover {

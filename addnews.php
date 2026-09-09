@@ -26,14 +26,14 @@ $csrfToken = generate_csrf_token();
             <div class="form-container">
                 <h2>Add News</h2>
                 <form action="insert_news.php" method="POST" enctype="multipart/form-data">
-                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
+                    <input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>">
                     <!-- Title -->
                     <label for="title">Title:</label>
-                    <input type="text" name="title" id="title" required>
+                    <input type="text" name="title" id="title" maxlength="200" required>
 
                     <!-- Content -->
                     <label for="content">Content:</label>
-                    <textarea name="content" id="content" rows="6" required></textarea>
+                    <textarea name="content" id="content" rows="6" maxlength="10000" required></textarea>
 
                     <!-- Image Upload -->
                     <label for="image">Upload Image:</label>
@@ -70,9 +70,9 @@ $csrfToken = generate_csrf_token();
                             while ($row = $result->fetch_assoc()) {
                                 echo '<tr>';
                                 echo '<td>' . $counter . '</td>';
-                                echo '<td><img src="' . e($row["image_path"]) . '" alt="" width="50" height="50"></td>';
-                                echo '<td>' . htmlspecialchars($row["title"]) . '</td>';
-                                echo '<td>' . htmlspecialchars(substr($row["content"], 0, 50)) . '...</td>';
+                                echo '<td><img src="' . e(public_asset_path($row["image_path"])) . '" alt="" width="50" height="50"></td>';
+                                echo '<td>' . e($row["title"]) . '</td>';
+                                echo '<td>' . e(text_excerpt($row["content"], 50)) . '</td>';
                                 echo '<td>' . e($row["created_by"]) . '</td>';
                                 echo '<td><div class="table-actions">
                                 <a class="edit-button" href="edit_news.php?id=' . (int) $row["nid"] . '">
@@ -82,7 +82,7 @@ $csrfToken = generate_csrf_token();
                                     <i class="fas fa-eye"></i> Preview
                                 </a>
                                 <form action="delete_news.php" method="POST" style="display:inline;">
-                                    <input type="hidden" name="csrf_token" value="' . htmlspecialchars($csrfToken) . '">
+                                    <input type="hidden" name="csrf_token" value="' . e($csrfToken) . '">
                                     <input type="hidden" name="id" value="' . (int) $row["nid"] . '">
                                     <button type="submit" class="delete-button" onclick="return confirm(\'Delete this news item?\')">
                                         <i class="fas fa-trash-alt"></i> Delete
@@ -105,7 +105,7 @@ $csrfToken = generate_csrf_token();
     </div>
      <!-- Footer -->
      <footer>
-        <p>@2025 Donation Hub. All Rights Reserved.</p>
+        <p>&copy; <?= date('Y') ?> Donation Hub. All Rights Reserved.</p>
     </footer>
 </body>
 </html>

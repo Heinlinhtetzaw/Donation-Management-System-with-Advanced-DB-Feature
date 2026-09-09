@@ -43,11 +43,11 @@ $csrfToken = generate_csrf_token();
                     <input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>">
                     <input type="hidden" name="id" value="<?= (int) $news['nid'] ?>">
                     <label for="title">Title:</label>
-                    <input type="text" name="title" id="title" value="<?= e($news['title']) ?>" required>
+                    <input type="text" name="title" id="title" value="<?= e($news['title']) ?>" maxlength="200" required>
                     <label for="content">Content:</label>
-                    <textarea name="content" id="content" rows="8" required><?= e($news['content']) ?></textarea>
+                    <textarea name="content" id="content" rows="8" maxlength="10000" required><?= e($news['content']) ?></textarea>
                     <label>Current image:</label>
-                    <img class="current-image" src="<?= e($news['image_path']) ?>" alt="Current image for <?= e($news['title']) ?>">
+                    <img class="current-image" src="<?= e(public_asset_path($news['image_path'])) ?>" alt="Current image for <?= e($news['title']) ?>">
                     <label for="image">Replace image (optional):</label>
                     <input type="file" name="image" id="image" accept=".jpg,.jpeg,.png,.gif,.webp">
                     <input type="submit" value="Save Changes">
@@ -55,6 +55,6 @@ $csrfToken = generate_csrf_token();
             </div>
         </main>
     </div>
-    <footer><p>@2025 Donation Hub. All Rights Reserved.</p></footer>
+    <footer><p>&copy; <?= date('Y') ?> Donation Hub. All Rights Reserved.</p></footer>
 </body>
 </html>

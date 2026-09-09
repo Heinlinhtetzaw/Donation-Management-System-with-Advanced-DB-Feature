@@ -26,22 +26,22 @@ $csrfToken = generate_csrf_token();
             <div class="form-container">
                 <h2>Add Foundation</h2>
                 <form action="insert_foundation.php" method="POST" enctype="multipart/form-data">
-                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
+                    <input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>">
                     <!-- Image Upload -->
                     <label for="image">Upload Image:</label>
                     <input type="file" name="image" id="image" accept=".jpg,.jpeg,.png,.gif,.webp" required>
 
                     <!-- Frame -->
                     <label for="fname">Foundation-name:</label>
-                    <textarea name="fname" id="fname" rows="4" required></textarea>
+                    <textarea name="fname" id="fname" rows="4" maxlength="150" required></textarea>
 
                     <!-- Description -->
                     <label for="description">Description:</label>
-                    <textarea name="description" id="description" rows="4" required></textarea>
+                    <textarea name="description" id="description" rows="4" maxlength="1000" required></textarea>
 
                     <!-- Intro -->
                     <label for="intro">Introduction:</label>
-                    <textarea name="intro" id="intro" rows="4" required></textarea>
+                    <textarea name="intro" id="intro" rows="4" maxlength="5000" required></textarea>
 
 
                     <!-- Submit Button -->
@@ -76,9 +76,9 @@ $csrfToken = generate_csrf_token();
                             while ($row = $result->fetch_assoc()) {
                                 echo '<tr>';
                                 echo '<td>' . $counter. '</td>';
-                                echo '<td><img src="' . e($row["image_path"]) . '" alt="" width="50" height="50"></td>';
-                                echo '<td>' . htmlspecialchars($row["fname"]) . '</td>';
-                                echo '<td>' . htmlspecialchars($row["description"]) . '</td>';
+                                echo '<td><img src="' . e(public_asset_path($row["image_path"])) . '" alt="" width="50" height="50"></td>';
+                                echo '<td>' . e($row["fname"]) . '</td>';
+                                echo '<td>' . e(text_excerpt($row["description"], 100)) . '</td>';
                                 echo '<td>' . e($row["created_by"]) . '</td>';
                                 echo '<td><div class="table-actions">
                                 <a class="edit-button" href="edit_foundation.php?id=' . (int) $row["fid"] . '">
@@ -88,7 +88,7 @@ $csrfToken = generate_csrf_token();
                                     <i class="fas fa-eye"></i> Preview
                                 </a>
                                 <form action="delete_foundation.php" method="POST" style="display:inline;">
-                                    <input type="hidden" name="csrf_token" value="' . htmlspecialchars($csrfToken) . '">
+                                    <input type="hidden" name="csrf_token" value="' . e($csrfToken) . '">
                                     <input type="hidden" name="id" value="' . (int) $row["fid"] . '">
                                     <button type="submit" class="delete-button" onclick="return confirm(\'Delete this foundation?\')">
                                         <i class="fas fa-trash-alt"></i> Delete
@@ -111,7 +111,7 @@ $csrfToken = generate_csrf_token();
     </div>
     <!-- Footer -->
     <footer>
-        <p>@2025 Donation Hub. All Rights Reserved.</p>
+        <p>&copy; <?= date('Y') ?> Donation Hub. All Rights Reserved.</p>
     </footer>
 </body>
 </html>

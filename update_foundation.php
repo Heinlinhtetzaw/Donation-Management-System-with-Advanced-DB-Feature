@@ -8,11 +8,14 @@ require_post_request('addfoundation.php');
 require_valid_csrf('addfoundation.php');
 
 $id = positive_int($_POST['id'] ?? null);
-$fname = trim($_POST['fname'] ?? '');
-$description = trim($_POST['description'] ?? '');
-$intro = trim($_POST['intro'] ?? '');
-if ($id === null || $fname === '' || $description === '' || $intro === '') {
-    set_flash('error', 'All foundation fields are required.');
+$fname = request_string($_POST, 'fname');
+$description = request_string($_POST, 'description');
+$intro = request_string($_POST, 'intro');
+if ($id === null
+    || !has_text_length($fname, 1, 150)
+    || !has_text_length($description, 1, 1000)
+    || !has_text_length($intro, 1, 5000)) {
+    set_flash('error', 'Complete all foundation fields within their displayed length limits.');
     redirect_to('addfoundation.php');
 }
 
@@ -36,7 +39,7 @@ try {
         $imagePath = $newImagePath;
     }
 
-    $update = $conn->prepare('UPDATE foundations SET image_path = ?, fname = ?, description = ?, intro = ? WHERE fid = ?');
+    $update = $conn->prepare('UPDATE foundations SET image_path = ?, fname = ?, description = ?, intro = ?, create_at = create_at WHERE fid = ?');
     $update->bind_param('ssssi', $imagePath, $fname, $description, $intro, $id);
     $update->execute();
     $update->close();

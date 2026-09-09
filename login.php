@@ -13,10 +13,10 @@ if (!isset($_POST['csrf_token']) || !validate_csrf_token($_POST['csrf_token'])) 
     exit();
 }
 
-$username = isset($_POST['username']) ? trim($_POST['username']) : '';
-$password = $_POST['password'] ?? '';
+$username = request_string($_POST, 'username');
+$password = is_string($_POST['password'] ?? null) ? $_POST['password'] : '';
 
-if ($username === '' || $password === '') {
+if ($username === '' || text_length($username) > 50 || $password === '' || strlen($password) > 128) {
     $_SESSION['error'] = "Username and password are required.";
     header("Location: adlogin.php");
     exit();

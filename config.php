@@ -24,14 +24,21 @@ if (PHP_SAPI !== 'cli') {
 require_once __DIR__ . '/app/helpers.php';
 
 // Database configuration
-define('DB_HOST', 'localhost');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_NAME', 'dmssystem');
+function config_env($name, $default = '') {
+    $value = getenv($name);
+    return $value === false ? $default : $value;
+}
+
+define('DB_HOST', config_env('DMS_DB_HOST', 'localhost'));
+define('DB_PORT', (int) config_env('DMS_DB_PORT', '3306'));
+define('DB_USER', config_env('DMS_DB_USER', 'root'));
+define('DB_PASS', config_env('DMS_DB_PASS', ''));
+define('DB_NAME', config_env('DMS_DB_NAME', 'dmssystem'));
 
 // Fallback admin signup invite code used only when no runtime invite record exists.
 // Leave empty to allow first admin creation, then generate/store a one-time code.
-define('ADMIN_INVITE_CODE', '');
+define('ADMIN_INVITE_CODE', config_env('DMS_ADMIN_INVITE_CODE', ''));
+define('TRUST_PROXY_HEADERS', filter_var(config_env('DMS_TRUST_PROXY_HEADERS', 'false'), FILTER_VALIDATE_BOOLEAN));
 
 function admin_invite_record_path() {
     return __DIR__ . '/data/admin_invite_code.json';
@@ -153,7 +160,7 @@ function consume_admin_invite_code($submittedCode, callable $onValid) {
 }
 
 function get_client_ip() {
-    if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+    if (TRUST_PROXY_HEADERS && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
         $parts = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
         $ip = trim($parts[0]);
         if (filter_var($ip, FILTER_VALIDATE_IP)) {
@@ -191,7 +198,7 @@ function getDBConnection() {
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
     try {
-        $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+        $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
         $conn->set_charset('utf8mb4');
     } catch (mysqli_sql_exception $exception) {
         error_log('Database connection failed: ' . $exception->getMessage());

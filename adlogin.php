@@ -1,6 +1,7 @@
 <?php
 require_once 'config.php';
 require_once 'csrf.php';
+require_once __DIR__ . '/app/partials.php';
 
 if (is_admin_authenticated()) {
     header("Location: addashboard.php");
@@ -51,18 +52,7 @@ $csrfToken = generate_csrf_token();
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-    <nav class="navbar">
-        <div class="logo"><image src="./image/logooo2.jpg">
-            <span>Charity Donation Management</span>
-        </div>
-        <ul>
-            <li><a href="index.php"><i class="fas fa-home"></i>Home</a></li>
-            <li><a href="about.php"><i class="fas fa-building"></i>About</a></li>
-            <li><a href="news.php"><i class="fas fa-newspaper"></i>News</a></li>
-            <li><a href="donate.php"><i class="fas fa-donate"></i>Donate</a></li>
-            <li class="active"><a href="adlogin.php" class="btn admin"><i class="fas fa-sign-in-alt"></i>Login</a></li>
-        </ul>
-    </nav>
+    <?php render_public_navigation('login'); ?>
 
     <div class="hero">
         <div class="login-container">
@@ -72,21 +62,21 @@ $csrfToken = generate_csrf_token();
                    <?php if ($lockoutRemaining !== null): ?>
                        data-lockout-seconds="<?php echo (int) $lockoutRemaining; ?>"
                    <?php endif; ?>
-                ><?php echo htmlspecialchars($errorMessage); ?></p>
+                ><?= e($errorMessage) ?></p>
             <?php endif; ?>
             <?php if ($successMessage !== ''): ?>
-                <p style="color: #28a745; font-size: 14px; margin-bottom: 10px;"><?php echo htmlspecialchars($successMessage); ?></p>
+                <p style="color: #28a745; font-size: 14px; margin-bottom: 10px;"><?= e($successMessage) ?></p>
             <?php endif; ?>
 
             <form action="login.php" method="POST">
-                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
+                <input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>">
                 <div class="input-group">
                     <label for="username">Username</label>
-                    <input type="text" id="username" name="username" required>
+                    <input type="text" id="username" name="username" maxlength="50" autocomplete="username" required>
                 </div>
                 <div class="input-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required>
+                    <input type="password" id="password" name="password" maxlength="128" autocomplete="current-password" required>
                 </div>
                 <button type="submit" class="btn">Login</button>
             </form>

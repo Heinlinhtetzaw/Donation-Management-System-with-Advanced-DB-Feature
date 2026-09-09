@@ -134,6 +134,7 @@ body {
     padding: 20px;
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    overflow-x: auto;
 }
 
 .delete-section h3 {
@@ -186,9 +187,19 @@ body {
 
 .table-actions {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: center;
     gap: 8px;
+}
+
+.delete-section table th:last-child,
+.delete-section table td:last-child {
+    min-width: 365px;
+    white-space: nowrap;
+}
+
+.table-actions > * {
+    flex: 0 0 auto;
 }
 
 .edit-button,

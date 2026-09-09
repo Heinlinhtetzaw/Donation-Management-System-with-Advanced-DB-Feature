@@ -6,21 +6,18 @@ require_once __DIR__ . '/app/DonationAdminService.php';
 require_post_request('donate.php');
 require_valid_csrf('donate.php');
 
-function validateMyanmarPhoneNumber($phone) {
-    return preg_match('/^([၀၁၂၃၄၅၆၇၈၉]{11}|[0-9]{11})$/u', $phone);
+function is_valid_myanmar_phone($phone) {
+    return preg_match('/^[0-9]{11}$/', $phone) === 1;
 }
 
-$donorName = trim($_POST['donor_name'] ?? '');
-$address = trim($_POST['address'] ?? '');
-$phone = trim($_POST['phone'] ?? '');
-$amount = strtr((string) ($_POST['amount'] ?? ''), [
-    '၀' => '0', '၁' => '1', '၂' => '2', '၃' => '3', '၄' => '4',
-    '၅' => '5', '၆' => '6', '၇' => '7', '၈' => '8', '၉' => '9',
-]);
+$donorName = request_string($_POST, 'donor_name');
+$address = request_string($_POST, 'address');
+$phone = normalize_myanmar_digits(request_string($_POST, 'phone'));
+$amount = normalize_myanmar_digits(request_string($_POST, 'amount'));
 $foundationId = positive_int($_POST['foundation_id'] ?? null);
-$paymentMethod = $_POST['payment_method'] ?? '';
+$paymentMethod = request_string($_POST, 'payment_method');
 
-if ($donorName === '' || $address === '' || !validateMyanmarPhoneNumber($phone)) {
+if (!has_text_length($donorName, 1, 100) || !has_text_length($address, 1, 100) || !is_valid_myanmar_phone($phone)) {
     set_flash('error', 'Please enter your name, address, and a valid 11-digit phone number.');
     redirect_to('donate.php');
 }

@@ -7,16 +7,15 @@ require_once __DIR__ . '/app/AdminAuditService.php';
 require_post_request('addnews.php');
 require_valid_csrf('addnews.php');
 
-$conn = getDBConnection();
+$title = request_string($_POST, 'title');
+$content = request_string($_POST, 'content');
 
-$title = trim($_POST["title"] ?? '');
-$content = trim($_POST["content"] ?? '');
-
-if ($title === '' || $content === '') {
-    set_flash('error', 'A title and content are required.');
+if (!has_text_length($title, 1, 200) || !has_text_length($content, 1, 10000)) {
+    set_flash('error', 'Enter a title and article within the displayed length limits.');
     redirect_to('addnews.php');
 }
 
+$conn = getDBConnection();
 $imagePath = null;
 $transactionStarted = false;
 try {

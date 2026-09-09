@@ -8,10 +8,10 @@ require_post_request('addnews.php');
 require_valid_csrf('addnews.php');
 
 $id = positive_int($_POST['id'] ?? null);
-$title = trim($_POST['title'] ?? '');
-$content = trim($_POST['content'] ?? '');
-if ($id === null || $title === '' || $content === '') {
-    set_flash('error', 'A title and content are required.');
+$title = request_string($_POST, 'title');
+$content = request_string($_POST, 'content');
+if ($id === null || !has_text_length($title, 1, 200) || !has_text_length($content, 1, 10000)) {
+    set_flash('error', 'Enter a title and article within the displayed length limits.');
     redirect_to('addnews.php');
 }
 
@@ -35,7 +35,7 @@ try {
         $imagePath = $newImagePath;
     }
 
-    $update = $conn->prepare('UPDATE news SET image_path = ?, title = ?, content = ? WHERE nid = ?');
+    $update = $conn->prepare('UPDATE news SET image_path = ?, title = ?, content = ?, create_at = create_at WHERE nid = ?');
     $update->bind_param('sssi', $imagePath, $title, $content, $id);
     $update->execute();
     $update->close();

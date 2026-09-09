@@ -97,6 +97,7 @@ body::before {
 /* Logo */
 .logo {
     display: flex;
+    text-decoration: none;
     align-items: center;
     gap: 10px;
     font-family: 'Poppins', sans-serif;

@@ -36,11 +36,11 @@ if (!$news) {
                 <h1><?= e($news['title']) ?></h1>
                 <p class="preview-date"><?= e($news['create_at']) ?></p>
                 <p><strong>Created by</strong><br><?= e($news['created_by']) ?></p>
-                <img class="preview-image" src="<?= e($news['image_path']) ?>" alt="<?= e($news['title']) ?>">
+                <img class="preview-image" src="<?= e(public_asset_path($news['image_path'])) ?>" alt="<?= e($news['title']) ?>">
                 <p><?= e($news['content']) ?></p>
             </article>
         </main>
     </div>
-    <footer><p>@2025 Donation Hub. All Rights Reserved.</p></footer>
+    <footer><p>&copy; <?= date('Y') ?> Donation Hub. All Rights Reserved.</p></footer>
 </body>
 </html>

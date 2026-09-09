@@ -1,68 +1,63 @@
 <?php
 require_once 'config.php';
 require_once 'csrf.php';
+require_once __DIR__ . '/app/partials.php';
 
 if (is_admin_authenticated()) {
-    header("Location: addashboard.php");
-    exit();
+    redirect_to('addashboard.php');
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     if (!isset($_POST['csrf_token']) || !validate_csrf_token($_POST['csrf_token'])) {
-        $_SESSION['error'] = "Invalid request.";
-        header("Location: signup.php");
-        exit();
+        $_SESSION['error'] = 'Invalid request.';
+        redirect_to('signup.php');
     }
 
-    $username = isset($_POST['username']) ? trim($_POST['username']) : '';
-    $password = $_POST['password'] ?? '';
-    $confirmPassword = $_POST['confirm_password'] ?? '';
-    $inviteCode = $_POST['invite_code'] ?? '';
+    $username = request_string($_POST, 'username');
+    $password = is_string($_POST['password'] ?? null) ? $_POST['password'] : '';
+    $confirmPassword = is_string($_POST['confirm_password'] ?? null) ? $_POST['confirm_password'] : '';
+    $inviteCode = request_string($_POST, 'invite_code');
 
-    if ($username === '' || $password === '' || $confirmPassword === '') {
-        $_SESSION['error'] = "All fields are required.";
-        header("Location: signup.php");
-        exit();
+    if (preg_match('/^[\p{L}\p{N}_.-]{3,50}$/u', $username) !== 1) {
+        $_SESSION['error'] = 'Username must be 3–50 letters, numbers, dots, dashes, or underscores.';
+        redirect_to('signup.php');
     }
-
     if ($password !== $confirmPassword) {
-        $_SESSION['error'] = "Passwords do not match.";
-        header("Location: signup.php");
-        exit();
+        $_SESSION['error'] = 'Passwords do not match.';
+        redirect_to('signup.php');
     }
 
-    $passwordPattern = '/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z\\d])\\S{8,}$/';
-    if (!preg_match($passwordPattern, $password)) {
-        $_SESSION['error'] = "Password must be at least 8 characters and include uppercase, lowercase, number, and symbol (no spaces).";
-        header("Location: signup.php");
-        exit();
+    $passwordPattern = '/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d])\S{8,128}$/';
+    if (preg_match($passwordPattern, $password) !== 1) {
+        $_SESSION['error'] = 'Password must be 8–128 characters and include uppercase, lowercase, number, and symbol (no spaces).';
+        redirect_to('signup.php');
     }
 
     $conn = getDBConnection();
     $conn->begin_transaction();
+    $isFirstAdmin = false;
 
     try {
-        $countStmt = $conn->prepare("SELECT COUNT(*) AS total FROM admin");
-        $countStmt->execute();
-        $countResult = $countStmt->get_result();
-        $row = $countResult ? $countResult->fetch_assoc() : ['total' => 0];
-        $countStmt->close();
-        $isFirstAdmin = ((int) $row['total']) === 0;
+        $firstAdmin = $conn->query(
+            'SELECT admin_id FROM admin ORDER BY admin_id ASC LIMIT 1 FOR UPDATE'
+        )->fetch_assoc();
+        $isFirstAdmin = $firstAdmin === null;
 
-        $check = $conn->prepare("SELECT 1 FROM admin WHERE adname = ?");
-        $check->bind_param("s", $username);
+        $check = $conn->prepare('SELECT 1 FROM admin WHERE adname = ? LIMIT 1');
+        $check->bind_param('s', $username);
         $check->execute();
-        $existing = $check->get_result();
-        $usernameExists = $existing->num_rows > 0;
+        $usernameExists = $check->get_result()->num_rows > 0;
         $check->close();
         if ($usernameExists) {
             throw new DomainException('Username already exists.');
         }
 
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-        $createAdmin = function () use ($conn, $username, $hashedPassword) {
-            $insert = $conn->prepare("INSERT INTO admin (adname, adpassword, failed_attempts) VALUES (?, ?, 0)");
-            $insert->bind_param("ss", $username, $hashedPassword);
+        $createAdmin = static function () use ($conn, $username, $hashedPassword) {
+            $insert = $conn->prepare(
+                'INSERT INTO admin (adname, adpassword, failed_attempts) VALUES (?, ?, 0)'
+            );
+            $insert->bind_param('ss', $username, $hashedPassword);
             $insert->execute();
             $insert->close();
         };
@@ -70,8 +65,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($isFirstAdmin) {
             $createAdmin();
         } else {
-            // Validation, account creation, and marking the code used occur while
-            // one exclusive file lock is held, preventing two uses of one code.
             consume_admin_invite_code($inviteCode, $createAdmin);
         }
 
@@ -80,15 +73,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $conn->rollback();
         $conn->close();
         $_SESSION['error'] = $exception->getMessage();
-        header("Location: signup.php");
-        exit();
+        redirect_to('signup.php');
     } catch (Throwable $exception) {
         $conn->rollback();
         $conn->close();
         error_log('Admin signup failed: ' . $exception->getMessage());
-        $_SESSION['error'] = "Signup failed. Please try again.";
-        header("Location: signup.php");
-        exit();
+        $_SESSION['error'] = 'Signup failed. Please try again.';
+        redirect_to('signup.php');
     }
 
     $conn->close();
@@ -100,16 +91,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $newInviteCode = generate_admin_invite_code();
                 store_admin_invite_record($newInviteCode, false);
             }
-            $_SESSION['success'] = "Signup successful. Invite code: " . $newInviteCode;
+            $_SESSION['success'] = 'Signup successful. Invite code: ' . $newInviteCode;
         } catch (Throwable $exception) {
             error_log('Initial invite-code generation failed: ' . $exception->getMessage());
-            $_SESSION['success'] = "Signup successful. Log in to generate an invite code.";
+            $_SESSION['success'] = 'Signup successful. Log in to generate an invite code.';
         }
     } else {
-        $_SESSION['success'] = "Signup successful. Please log in.";
+        $_SESSION['success'] = 'Signup successful. Please log in.';
     }
-    header("Location: adlogin.php");
-    exit();
+    redirect_to('adlogin.php');
 }
 
 $errorMessage = '';
@@ -118,6 +108,9 @@ if (!empty($_SESSION['error'])) {
     unset($_SESSION['error']);
 }
 
+$conn = getDBConnection();
+$requiresInviteCode = (int) $conn->query('SELECT COUNT(*) AS total FROM admin')->fetch_assoc()['total'] > 0;
+$conn->close();
 $csrfToken = generate_csrf_token();
 ?>
 <!DOCTYPE html>
@@ -130,46 +123,39 @@ $csrfToken = generate_csrf_token();
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-    <nav class="navbar">
-        <div class="logo"><image src="./image/logooo2.jpg">
-            <span>Charity Donation Management</span>
-        </div>
-        <ul>
-            <li><a href="index.php"><i class="fas fa-home"></i>Home</a></li>
-            <li><a href="about.php"><i class="fas fa-building"></i>About</a></li>
-            <li><a href="news.php"><i class="fas fa-newspaper"></i>News</a></li>
-            <li><a href="donate.php"><i class="fas fa-donate"></i>Donate</a></li>
-            <li class="active"><a href="adlogin.php" class="btn admin"><i class="fas fa-sign-in-alt"></i>Login</a></li>
-        </ul>
-    </nav>
-
-    <div class="hero">
+    <?php render_public_navigation('login'); ?>
+    <main class="hero">
         <div class="login-container">
             <h2>Admin Signup</h2>
             <?php if ($errorMessage !== ''): ?>
-                <p class="error-message"><?php echo htmlspecialchars($errorMessage); ?></p>
+                <p class="error-message"><?= e($errorMessage) ?></p>
+            <?php endif; ?>
+            <?php if (!$requiresInviteCode): ?>
+                <p>Create the first administrator account. No invite code is required.</p>
             <?php endif; ?>
 
             <form action="signup.php" method="POST">
-                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
+                <input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>">
                 <div class="input-group">
                     <label for="username">Username</label>
-                    <input type="text" id="username" name="username" required>
+                    <input type="text" id="username" name="username" minlength="3" maxlength="50" autocomplete="username" required>
                 </div>
                 <div class="input-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required
-                        pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d])\S{8,}"
-                        title="At least 8 characters with uppercase, lowercase, number, and symbol; no spaces.">
+                    <input type="password" id="password" name="password" minlength="8" maxlength="128" autocomplete="new-password" required
+                        pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d])\S{8,128}"
+                        title="8–128 characters with uppercase, lowercase, number, and symbol; no spaces.">
                 </div>
                 <div class="input-group">
                     <label for="confirm_password">Confirm Password</label>
-                    <input type="password" id="confirm_password" name="confirm_password" required>
+                    <input type="password" id="confirm_password" name="confirm_password" maxlength="128" autocomplete="new-password" required>
                 </div>
-                <div class="input-group">
-                    <label for="invite_code">Invite Code</label>
-                    <input type="password" id="invite_code" name="invite_code" required>
-                </div>
+                <?php if ($requiresInviteCode): ?>
+                    <div class="input-group">
+                        <label for="invite_code">Invite Code</label>
+                        <input type="password" id="invite_code" name="invite_code" maxlength="128" required>
+                    </div>
+                <?php endif; ?>
                 <button type="submit" class="btn">Create Account</button>
             </form>
 
@@ -177,6 +163,6 @@ $csrfToken = generate_csrf_token();
                 Already have an account? <a href="adlogin.php" style="color: orange;">Login</a>
             </p>
         </div>
-    </div>
+    </main>
 </body>
 </html>

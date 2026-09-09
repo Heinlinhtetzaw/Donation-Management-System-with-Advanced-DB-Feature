@@ -43,20 +43,20 @@ $csrfToken = generate_csrf_token();
                     <input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>">
                     <input type="hidden" name="id" value="<?= (int) $foundation['fid'] ?>">
                     <label>Current image:</label>
-                    <img class="current-image" src="<?= e($foundation['image_path']) ?>" alt="Current image for <?= e($foundation['fname']) ?>">
+                    <img class="current-image" src="<?= e(public_asset_path($foundation['image_path'])) ?>" alt="Current image for <?= e($foundation['fname']) ?>">
                     <label for="image">Replace image (optional):</label>
                     <input type="file" name="image" id="image" accept=".jpg,.jpeg,.png,.gif,.webp">
                     <label for="fname">Foundation name:</label>
-                    <textarea name="fname" id="fname" rows="4" required><?= e($foundation['fname']) ?></textarea>
+                    <textarea name="fname" id="fname" rows="4" maxlength="150" required><?= e($foundation['fname']) ?></textarea>
                     <label for="description">Description:</label>
-                    <textarea name="description" id="description" rows="4" required><?= e($foundation['description']) ?></textarea>
+                    <textarea name="description" id="description" rows="4" maxlength="1000" required><?= e($foundation['description']) ?></textarea>
                     <label for="intro">Introduction:</label>
-                    <textarea name="intro" id="intro" rows="4" required><?= e($foundation['intro']) ?></textarea>
+                    <textarea name="intro" id="intro" rows="4" maxlength="5000" required><?= e($foundation['intro']) ?></textarea>
                     <input type="submit" value="Save Changes">
                 </form>
             </div>
         </main>
     </div>
-    <footer><p>@2025 Donation Hub. All Rights Reserved.</p></footer>
+    <footer><p>&copy; <?= date('Y') ?> Donation Hub. All Rights Reserved.</p></footer>
 </body>
 </html>

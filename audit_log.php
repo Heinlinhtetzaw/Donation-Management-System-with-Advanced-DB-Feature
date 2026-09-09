@@ -1,30 +1,7 @@
 <?php
 require_once 'auth_check.php';
 require_once __DIR__ . '/app/partials.php';
-
-function audit_record_label($entityType, $entityId) {
-    $labels = [
-        'donation' => 'Donation',
-        'foundation' => 'Foundation',
-        'news' => 'News',
-    ];
-    return ($labels[$entityType] ?? ucfirst($entityType)) . ' #' . $entityId;
-}
-
-function audit_record_url($entityType, $entityId, $actionType) {
-    if ($actionType === 'deleted') {
-        return null;
-    }
-    $routes = [
-        'donation' => 'donation_detail.php',
-        'foundation' => 'preview_foundation.php',
-        'news' => 'preview_news.php',
-    ];
-    if (!isset($routes[$entityType])) {
-        return null;
-    }
-    return $routes[$entityType] . '?id=' . rawurlencode((string) $entityId);
-}
+require_once __DIR__ . '/app/AuditViewService.php';
 
 $conn = getDBConnection();
 $logs = $conn->query(
@@ -56,6 +33,7 @@ $logs = $conn->query(
             </div>
             <a class="button" href="donation_ledger.php">Open ledger</a>
         </header>
+        <?php render_flash_messages('flash-success', 'flash-error'); ?>
         <section class="panel">
             <div class="table-wrap">
                 <table class="workspace-table">

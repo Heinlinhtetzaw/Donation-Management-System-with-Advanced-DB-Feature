@@ -24,6 +24,7 @@
 .status-badge { display: inline-block; border-radius: 14px; padding: 4px 9px; background: #edf1f3; color: #2c3e50; font-size: .85rem; font-weight: 700; }
 .status-badge.complete { background: #d8f3df; color: #177432; }.status-badge.pending { background: #fff3cd; color: #8a6200; }
 .stats-grid, .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; }
+.detail-grid .full-width { grid-column: 1 / -1; }
 .stat-card { padding: 18px; }.stat-card small { display: block; color: #6a7780; margin-bottom: 8px; }.stat-card strong { color: #2c3e50; font-size: 1.2rem; }
 .detail-card { background: #f7f9fa; border-left: 4px solid orange; padding: 16px; border-radius: 6px; }.detail-card small { display: block; color: #6a7780; margin-bottom: 7px; }
 .flash-success { color: #176b2c; background: #d8f3df; padding: 11px; border-radius: 6px; }.flash-error { color: #98212c; background: #f9d9dc; padding: 11px; border-radius: 6px; }

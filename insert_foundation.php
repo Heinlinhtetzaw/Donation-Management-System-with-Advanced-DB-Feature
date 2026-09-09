@@ -7,17 +7,18 @@ require_once __DIR__ . '/app/AdminAuditService.php';
 require_post_request('addfoundation.php');
 require_valid_csrf('addfoundation.php');
 
-$conn = getDBConnection();
+$fname = request_string($_POST, 'fname');
+$description = request_string($_POST, 'description');
+$intro = request_string($_POST, 'intro');
 
-$fname = trim($_POST["fname"] ?? '');
-$description = trim($_POST["description"] ?? '');
-$intro = trim($_POST["intro"] ?? '');
-
-if ($fname === '' || $description === '' || $intro === '') {
-    set_flash('error', 'All foundation fields are required.');
+if (!has_text_length($fname, 1, 150)
+    || !has_text_length($description, 1, 1000)
+    || !has_text_length($intro, 1, 5000)) {
+    set_flash('error', 'Complete all foundation fields within their displayed length limits.');
     redirect_to('addfoundation.php');
 }
 
+$conn = getDBConnection();
 $imagePath = null;
 $transactionStarted = false;
 try {

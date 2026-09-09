@@ -35,12 +35,12 @@ if (!$foundation) {
                 <a class="back-link" href="addfoundation.php"><i class="fas fa-arrow-left"></i> Back to foundations</a>
                 <h1><?= e($foundation['fname']) ?></h1>
                 <p><strong>Created by</strong><br><?= e($foundation['created_by']) ?></p>
-                <img class="preview-image" src="<?= e($foundation['image_path']) ?>" alt="<?= e($foundation['fname']) ?>">
+                <img class="preview-image" src="<?= e(public_asset_path($foundation['image_path'])) ?>" alt="<?= e($foundation['fname']) ?>">
                 <p><strong>Description</strong><br><?= e($foundation['description']) ?></p>
                 <p><strong>Introduction</strong><br><?= e($foundation['intro']) ?></p>
             </article>
         </main>
     </div>
-    <footer><p>@2025 Donation Hub. All Rights Reserved.</p></footer>
+    <footer><p>&copy; <?= date('Y') ?> Donation Hub. All Rights Reserved.</p></footer>
 </body>
 </html>
